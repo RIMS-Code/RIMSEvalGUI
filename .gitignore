@@ -50,3 +50,7 @@ lib64
 .nox
 .pytest_cache
 htmlcov
+
+# project specific
+fugue-icons-3.5.6
+target
