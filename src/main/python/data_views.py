@@ -1,10 +1,18 @@
-"""Views for the open data, implemented as models."""
+"""Data views for opened CRD files."""
+
+
+from typing import Any, List
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 
 
-class OpenFilesView(QtWidgets.QListView):
-    """QListView Model for displaying and selecting opened data."""
+class OpenFilesListView(QtWidgets.QListView):
+    """List view for opened CRD files."""
 
-    def __ini__(self, parent):
-        """Initialize the OpenFileView Widget."""
+    def __init__(self, parent):
+        """Initialize open files list view."""
+        super().__init__(parent)
+
+        self.setSelectionMode(
+            QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection
+        )

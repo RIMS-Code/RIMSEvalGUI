@@ -1,10 +1,15 @@
-from fbs_runtime.application_context.PyQt6 import ApplicationContext
-from PyQt6 import QtCore, QtGui, QtWidgets
+"""Main RIMSEval graphical user interface."""
 
+from pathlib import Path
 import sys
 
+from fbs_runtime.application_context.PyQt6 import ApplicationContext
+import fbs_runtime.platform as fbsrt_platform
+from PyQt6 import QtCore, QtGui, QtWidgets
 import rimseval
 
+from data_models import OpenFilesModel
+from data_views import OpenFilesListView
 from elements import PeriodicTable
 from info_window import FileInfoWindow
 from plot_window import PlotWindow
@@ -17,11 +22,29 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         """Initialize the main window."""
         super().__init__()
 
-        self.setWindowTitle(f"RIMS Evaluation v{rimseval.__version__}")
-        self.setGeometry(QtCore.QRect(300, 300, 600, 200))
+        # crd related stuff
+        self.crd_files = None
+
+        # local profile
+        # fixme change user path back to home only
+        self.user_folder = Path.home().joinpath(
+            "Documents/ztmp/test"
+        )  # initialize, update as necessary
+        self.app_local_path = None  # home path for the application configs, etc.
+        self.init_local_profile()
 
         # fbs related stuff
         self.appctxt = appctxt
+
+        # window titles and geometry
+        self.setWindowTitle(f"RIMS Evaluation v{rimseval.__version__}")
+        self.setGeometry(QtCore.QRect(300, 300, 600, 200))
+
+        # views to access
+        self.file_names_view = OpenFilesListView(self)
+        self.file_names_model = OpenFilesModel(
+            tick=self.appctxt.get_resource("icons/tick.png")
+        )  # empty model
 
         # menu bar
         menu_bar = self.menuBar()
@@ -63,9 +86,28 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
         # initialize the UI
         self.init_menu_toolbar()
+        self.init_main_widget()
+
+    def init_local_profile(self):
+        """Initialize a user's local profile, platform dependent."""
+        if fbsrt_platform.is_windows():
+            app_local_path = Path.home().joinpath("AppData/Roaming/RIMSEval/")
+        else:
+            app_local_path = Path.home().joinpath(".config/RIMSEval/")
+        app_local_path.mkdir(parents=True, exist_ok=True)
+        self.app_local_path = app_local_path
 
     def init_main_widget(self):
         """Initialize the main widget."""
+        layout = QtWidgets.QHBoxLayout()
+
+        self.file_names_view.setModel(self.file_names_model)
+        self.file_names_view.activated.connect(
+            lambda ind: self.current_file_changed(ind)
+        )
+
+        layout.addWidget(self.file_names_view)
+        self.main_widget.setLayout(layout)
 
     def init_menu_toolbar(self):
         """Initialize the basics of the menu and tool bar, set the given categories."""
@@ -306,7 +348,28 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
     def open_crd(self):
         """Open CRD File(s)."""
-        pass
+        file_names = QtWidgets.QFileDialog.getOpenFileNames(
+            self,
+            "Open CRD File(s)",
+            str(self.user_folder.absolute()),
+            "CRD Files (*.crd)",
+        )[0]
+
+        if len(file_names) > 0:
+            # close files and remove from memory if they exist
+            if self.crd_files:
+                self.crd_files.close_files()
+
+            file_paths = [Path(file_name) for file_name in file_names]
+
+            # set user path to this folder
+            self.user_folder = file_paths[0].parent
+
+            self.crd_files = rimseval.MultiFileProcessor(file_paths)
+            # fixme do not evaluate unless user wants...
+            self.crd_files.read_files()
+
+            self.file_names_model.set_new_list(file_paths)
 
     def save_calibration(self, save_as: bool = False):
         """Save Calibration.
@@ -357,7 +420,10 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
     def calculate_batch(self):
         """Applies the currently congured settings to all open CRD files."""
-        pass
+        # get the currently selected files
+        selected_models = self.file_names_view.selectedIndexes()
+        selected_indexes = [it.row() for it in selected_models]
+        print(selected_indexes)
 
     # LST FILE FUNCTIONS #
 
@@ -398,7 +464,11 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         """Settings Dialog."""
         pass
 
-    # BUTTONS, ETC. #
+    # ACTIONS ON CHANGED MODEL VIEWS #
+
+    def current_file_changed(self, ind: QtCore.QModelIndex) -> None:
+        """Reacts to a different file that is currently selected."""
+        self.file_names_model.update_current(ind.row())
 
 
 if __name__ == "__main__":
