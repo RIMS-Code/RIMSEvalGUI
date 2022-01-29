@@ -225,7 +225,6 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         )
         calculate_batch_action.triggered.connect(self.calculate_batch)
         self.calculate_menu.addAction(calculate_batch_action)
-        tool_bar.addSeparator()
         tool_bar.addAction(calculate_batch_action)
 
         # LST FILE ACTIONS #
