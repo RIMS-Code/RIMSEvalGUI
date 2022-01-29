@@ -46,6 +46,7 @@ class OpenFilesModel(QtCore.QAbstractListModel):
     def set_new_list(self, names: List[Path]) -> None:
         """Clear the old model and set the new dataset."""
         self.open_files = []
+        self._currently_active = 0
         for it, name in enumerate(names):
             status = True if it == self._currently_active else False
             self.open_files.append([status, name.with_suffix("").name])

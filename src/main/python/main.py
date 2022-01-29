@@ -101,9 +101,14 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         """Initialize the main widget."""
         layout = QtWidgets.QHBoxLayout()
 
+        # OPEN FILE NAMES VIEW #
         self.file_names_view.setModel(self.file_names_model)
         self.file_names_view.activated.connect(
             lambda ind: self.current_file_changed(ind)
+        )
+        self.file_names_view.setToolTip(
+            "Double click file to make current.\n"
+            "Select multiple with Shift / Ctrl for batch processing."
         )
 
         layout.addWidget(self.file_names_view)
