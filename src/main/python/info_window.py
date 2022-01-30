@@ -122,7 +122,7 @@ class FileInfoWindow(QtWidgets.QMainWindow):
         add_two_to_layout(layout_hdr, "Pixels per Scan:", self.hdr_px_per_scan)
         add_two_to_layout(layout_hdr, "Number of Scans:", self.hdr_nof_scans)
         add_two_to_layout(layout_hdr, "Number of Shots:", self.hdr_nof_shots)
-        add_two_to_layout(layout_hdr, "Delta T (s)", self.hdr_delta_t)
+        add_two_to_layout(layout_hdr, "Delta T (s):", self.hdr_delta_t)
         layout.addLayout(layout_hdr)
 
         # align all editable labels right
