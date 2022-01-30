@@ -23,6 +23,11 @@ class OpenFilesModel(QtCore.QAbstractListModel):
         self.open_files = []
         self._currently_active = 0
 
+    @property
+    def currently_active(self) -> int:
+        """Return index of currently active file."""
+        return self._currently_active
+
     def data(self, index, role=QtCore.Qt.ItemDataRole.DisplayRole):
         if role == QtCore.Qt.ItemDataRole.DisplayRole:
             _, text = self.open_files[index.row()]

@@ -349,6 +349,14 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         # add toolbar to self
         self.addToolBar(tool_bar)
 
+    # PROPERTIES #
+
+    @property
+    def current_crd_file(self):
+        """Return currently active CRD file."""
+        if self.crd_files is not None:
+            return self.crd_files.files[self.file_names_model.currently_active]
+
     # FILE MENU FUNCTIONS #
 
     def open_crd(self):
@@ -371,10 +379,13 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self.user_folder = file_paths[0].parent
 
             self.crd_files = rimseval.MultiFileProcessor(file_paths)
+
             # fixme do not evaluate unless user wants...
-            self.crd_files.read_files()
+            # self.crd_files.read_files()
 
             self.file_names_model.set_new_list(file_paths)
+
+            self.update_info_window(update_all=True)
 
     def save_calibration(self, save_as: bool = False):
         """Save Calibration.
@@ -474,6 +485,19 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
     def current_file_changed(self, ind: QtCore.QModelIndex) -> None:
         """Reacts to a different file that is currently selected."""
         self.file_names_model.update_current(ind.row())
+
+        # update windows
+        self.update_info_window(update_all=True)
+
+    def update_info_window(self, update_all: bool = False) -> None:
+        """Update the Info window.
+
+        :param update_all: If True, header information is updated as well.
+        """
+        crd_file = self.current_crd_file
+        self.info_window.update_current(crd_file)
+        if update_all:
+            self.info_window.update_header(crd_file)
 
 
 if __name__ == "__main__":
