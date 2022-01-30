@@ -119,7 +119,7 @@ class ElementInfo(QDialog):
     @staticmethod
     def copy_to_clipboard(text: str) -> None:
         """Copies given text to clipboard."""
-        app.clipboard().setText(text)
+        QApplication.clipboard().setText(text)
 
     def element_and_ms(self) -> None:
         """Create a table with all the element data of interest and add to layout."""
