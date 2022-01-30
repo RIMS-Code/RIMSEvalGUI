@@ -59,6 +59,20 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.settings_menu = menu_bar.addMenu("Settings")
 
         # actions
+        self.save_cal_action = None
+        self.save_cal_as_action = None
+        self.mass_cal_def_action = None
+        self.mass_cal_edit_action = None
+        self.integrals_set_edit_action = None
+        self.integrals_draw_action = None
+        self.integrals_fitting_action = None
+        self.integrals_copy_action = None
+        self.backgrounds_draw_action = None
+        self.backgrounds_set_edit_action = None
+        self.calculate_single_action = None
+        self.calculate_batch_action = None
+        self.export_mass_spectrum_action = None
+        self.export_tof_spectrum_action = None
         self.window_elements_action = None
         self.window_info_action = None
         self.window_plot_action = None
@@ -145,6 +159,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.file_menu.addSeparator()
         self.file_menu.addAction(save_cal_action)
         tool_bar.addAction(save_cal_action)
+        self.save_cal_action = save_cal_action
 
         save_cal_as_action = QtGui.QAction(
             QtGui.QIcon(None),
@@ -157,6 +172,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             lambda: self.save_calibration(save_as=True)
         )
         self.file_menu.addAction(save_cal_as_action)
+        self.save_cal_as_action = None
 
         # MASS CAL ACTIONS #
 
@@ -170,6 +186,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.mass_cal_menu.addAction(mass_cal_def_action)
         tool_bar.addSeparator()
         tool_bar.addAction(mass_cal_def_action)
+        self.mass_cal_def_action = mass_cal_def_action
 
         mass_cal_edit_action = QtGui.QAction(
             QtGui.QIcon(None),
@@ -179,6 +196,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         mass_cal_edit_action.setStatusTip("Edit the existing mass calibration")
         mass_cal_edit_action.triggered.connect(self.edit_mass_calibration)
         self.mass_cal_menu.addAction(mass_cal_edit_action)
+        self.mass_cal_def_action = mass_cal_def_action
 
         # INTEGRALS ACTIONS #
 
@@ -190,6 +208,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         integrals_set_edit_action.setStatusTip("Set new or edit existing integrals.")
         integrals_set_edit_action.triggered.connect(self.integrals_set_edit)
         self.integrals_menu.addAction(integrals_set_edit_action)
+        self.integrals_set_edit_action = integrals_set_edit_action
 
         integrals_draw_action = QtGui.QAction(
             QtGui.QIcon(self.appctxt.get_resource("icons/system-monitor.png")),
@@ -202,6 +221,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         )
         self.integrals_menu.addAction(integrals_draw_action)
         tool_bar.addAction(integrals_draw_action)
+        self.integrals_draw_action = integrals_draw_action
 
         integrals_fitting_action = QtGui.QAction(
             QtGui.QIcon(None),
@@ -211,6 +231,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         integrals_fitting_action.setStatusTip("Fit the peaks to define integrals")
         integrals_fitting_action.triggered.connect(self.integrals_fitting)
         self.integrals_menu.addAction(integrals_fitting_action)
+        self.integrals_fitting_action = integrals_fitting_action
         # todo
         integrals_fitting_action.setDisabled(True)
 
@@ -226,6 +247,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.integrals_menu.addAction(integrals_copy_action)
         tool_bar.addSeparator()
         tool_bar.addAction(integrals_copy_action)
+        self.integrals_copy_action = None
 
         backgrounds_draw_action = QtGui.QAction(
             QtGui.QIcon(None),
@@ -236,6 +258,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         backgrounds_draw_action.triggered.connect(self.backgrounds_draw)
         self.integrals_menu.addSeparator()
         self.integrals_menu.addAction(backgrounds_draw_action)
+        self.backgrounds_draw_action = backgrounds_draw_action
 
         backgrounds_set_edit_action = QtGui.QAction(
             QtGui.QIcon(None),
@@ -245,6 +268,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         backgrounds_set_edit_action.setStatusTip("Set / edit backgrounds")
         backgrounds_set_edit_action.triggered.connect(self.backgrounds_set_edit)
         self.integrals_menu.addAction(backgrounds_set_edit_action)
+        self.backgrounds_set_edit_action = backgrounds_set_edit_action
 
         # CALCULATE ACTIONS #
 
@@ -261,6 +285,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.calculate_menu.addAction(calculate_single_action)
         tool_bar.addSeparator()
         tool_bar.addAction(calculate_single_action)
+        self.calculate_single_action = calculate_single_action
 
         calculate_batch_action = QtGui.QAction(
             QtGui.QIcon(self.appctxt.get_resource("icons/wand-hat.png")),
@@ -273,6 +298,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         calculate_batch_action.triggered.connect(self.calculate_batch)
         self.calculate_menu.addAction(calculate_batch_action)
         tool_bar.addAction(calculate_batch_action)
+        self.calculate_batch_action = calculate_batch_action
 
         # LST FILE ACTIONS #
 
@@ -289,6 +315,33 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         tool_bar.addAction(lst_convert_action)
 
         # EXPORT ACTIONS #
+        export_mass_spectrum_action = QtGui.QAction(
+            QtGui.QIcon(),
+            "Export Mass Spectrum",
+            self,
+        )
+        export_mass_spectrum_action.setStatusTip("Export Mass Spectrum as csv file.")
+        export_mass_spectrum_action.triggered.connect(self.export_spectrum_as_csv)
+        self.export_menu.addAction(export_mass_spectrum_action)
+        self.export_mass_spectrum_action = export_mass_spectrum_action
+        # todo
+        self.export_mass_spectrum_action.setDisabled(True)
+
+        export_tof_spectrum_action = QtGui.QAction(
+            QtGui.QIcon(),
+            "Export ToF Spectrum",
+            self,
+        )
+        export_tof_spectrum_action.setStatusTip(
+            "Export Time of Flight Spectrum as csv file."
+        )
+        export_tof_spectrum_action.triggered.connect(
+            lambda: self.export_spectrum_as_csv(tof=True)
+        )
+        self.export_menu.addAction(export_tof_spectrum_action)
+        self.export_tof_spectrum_action = export_tof_spectrum_action
+        # todo
+        self.export_tof_spectrum_action.setDisabled(True)
 
         # VIEW ACIONS #
 
@@ -448,6 +501,13 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         pass
 
     # EXPORT FUNCTIONS #
+
+    def export_spectrum_as_csv(self, tof: bool = False) -> None:
+        """Export a spectrum to a csv file.
+
+        :param tof: If true, export ToF spectrum, otherwise mass spectrum.
+        """
+        print(tof)
 
     # SPECIAL FUNCTIONS #
 
