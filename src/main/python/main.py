@@ -77,6 +77,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.calculate_batch_action = None
         self.export_mass_spectrum_action = None
         self.export_tof_spectrum_action = None
+        self.special_hist_dt_ions_action = None
+        self.special_hist_ions_shot_action = None
         self.window_elements_action = None
         self.window_info_action = None
         self.window_plot_action = None
@@ -348,6 +350,34 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         # todo
         self.export_tof_spectrum_action.setDisabled(True)
 
+        # SPECIAL ACTIONS #
+
+        special_hist_ions_shot_action = QtGui.QAction(
+            QtGui.QIcon(None),
+            "Histogram Ions/Shot",
+            self,
+        )
+        special_hist_ions_shot_action.setStatusTip("Show a histogram of ions per shot.")
+        special_hist_ions_shot_action.triggered.connect(self.histogram_ions_per_shot)
+        self.special_menu.addAction(special_hist_ions_shot_action)
+        self.special_hist_ions_shot_action = special_hist_ions_shot_action
+        # todo
+        self.special_hist_ions_shot_action.setDisabled(True)
+
+        special_hist_dt_ions_action = QtGui.QAction(
+            QtGui.QIcon(None),
+            "Histogram dt ions",
+            self,
+        )
+        special_hist_dt_ions_action.setStatusTip(
+            "Show a histogram for multi-ion shots with time differences between ions."
+        )
+        special_hist_dt_ions_action.triggered.connect(self.histogram_ions_per_shot)
+        self.special_menu.addAction(special_hist_dt_ions_action)
+        self.special_hist_dt_ions_action = special_hist_dt_ions_action
+        # todo
+        self.special_hist_dt_ions_action.setDisabled(True)
+
         # VIEW ACIONS #
 
         window_info_action = QtGui.QAction(
@@ -452,8 +482,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
             self.crd_files = rimseval.MultiFileProcessor(file_paths)
 
-            # fixme do not evaluate unless user wants...
-            # self.crd_files.read_files()
+            if self.config.get("Calculate on open"):
+                self.crd_files.read_files()
 
             self.file_names_model.set_new_list(file_paths)
 
@@ -529,6 +559,17 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         print(tof)
 
     # SPECIAL FUNCTIONS #
+
+    def histogram_ions_per_shot(self):
+        """Plot a histogram of ions per shot."""
+        pass
+
+    def histogram_dt_ions(self):
+        """Plot a histogram of time delta between arriving ions.
+
+        Only done for shots with more than 2 ions.
+        """
+        pass
 
     # VIEW FUNCTIONS #
 
