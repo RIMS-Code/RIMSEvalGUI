@@ -182,6 +182,17 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.file_menu.addAction(save_cal_as_action)
         self.save_cal_as_action = None
 
+        file_exit_action = QtGui.QAction(
+            QtGui.QIcon(self.appctxt.get_resource("icons/application-export.png")),
+            "Exit",
+            self,
+        )
+        file_exit_action.setStatusTip("Exit program")
+        file_exit_action.setShortcut(QtGui.QKeySequence("Ctrl+q"))
+        file_exit_action.triggered.connect(self.close)
+        self.file_menu.addSeparator()
+        self.file_menu.addAction(file_exit_action)
+
         # MASS CAL ACTIONS #
 
         mass_cal_def_action = QtGui.QAction(
@@ -448,6 +459,10 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.settings_menu.addAction(settings_action)
         tool_bar.addSeparator()
         tool_bar.addAction(settings_action)
+
+        # exit button
+        tool_bar.addSeparator()
+        tool_bar.addAction(file_exit_action)
 
         # add toolbar to self
         self.addToolBar(tool_bar)
