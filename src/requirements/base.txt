@@ -1,2 +1,2 @@
+pyqtconfig
 rimseval
-git+https://github.com/pythonguis/pyqtconfig.git
