@@ -71,6 +71,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.integrals_draw_action = None
         self.integrals_fitting_action = None
         self.integrals_copy_action = None
+        self.integrals_copy_pkg_action = None
         self.backgrounds_draw_action = None
         self.backgrounds_set_edit_action = None
         self.calculate_single_action = None
@@ -254,7 +255,21 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.integrals_menu.addAction(integrals_copy_action)
         tool_bar.addSeparator()
         tool_bar.addAction(integrals_copy_action)
-        self.integrals_copy_action = None
+        self.integrals_copy_action = integrals_copy_action
+
+        integrals_copy_pkg_action = QtGui.QAction(
+            QtGui.QIcon(None),
+            "Copy Integrals Packages",
+            self,
+        )
+        integrals_copy_pkg_action.setStatusTip(
+            "Copy integrals of all packages to the clipboard"
+        )
+        integrals_copy_pkg_action.triggered.connect(
+            self.integrals_pkg_copy_to_clipboard
+        )
+        self.integrals_menu.addAction(integrals_copy_pkg_action)
+        self.integrals_copy_pkg_action = integrals_copy_pkg_action
 
         backgrounds_draw_action = QtGui.QAction(
             QtGui.QIcon(None),
@@ -519,6 +534,10 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         raise NotImplementedError
 
     def integrals_copy_to_clipboard(self):
+        """Copy the integrals to the clipboard for pasting into, e.g., Excel."""
+        pass
+
+    def integrals_pkg_copy_to_clipboard(self):
         """Copy the integrals to the clipboard for pasting into, e.g., Excel."""
         pass
 
