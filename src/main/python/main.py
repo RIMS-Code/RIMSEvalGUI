@@ -6,6 +6,8 @@ import sys
 from fbs_runtime.application_context.PyQt6 import ApplicationContext
 import fbs_runtime.platform as fbsrt_platform
 from PyQt6 import QtCore, QtGui, QtWidgets
+
+from pyqtconfig import ConfigDialog, ConfigManager
 import rimseval
 
 from data_models import OpenFilesModel
@@ -32,6 +34,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         )  # initialize, update as necessary
         self.app_local_path = None  # home path for the application configs, etc.
         self.init_local_profile()
+
+        self.config = None
 
         # fbs related stuff
         self.appctxt = appctxt
@@ -101,6 +105,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         # initialize the UI
         self.init_menu_toolbar()
         self.init_main_widget()
+        self.init_config_manager()
 
     def init_local_profile(self):
         """Initialize a user's local profile, platform dependent."""
@@ -394,13 +399,27 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self,
         )
         settings_action.setStatusTip("Bring up settings dialog")
-        settings_action.triggered.connect(self.window_plot)
+        settings_action.triggered.connect(self.window_settings)
         self.settings_menu.addAction(settings_action)
         tool_bar.addSeparator()
         tool_bar.addAction(settings_action)
 
         # add toolbar to self
         self.addToolBar(tool_bar)
+
+    def init_config_manager(self):
+        """Initialize the configuration manager and load the default configuration."""
+        default_values = {
+            "Plot with log y-axis": True,
+            "Calculate on open": True,
+            "Signal Channel": 1,
+            "Tag Channel": 2,
+            "Peak FWHM (us)": 0.02,
+        }
+
+        self.config = ConfigManager(
+            default_values, filename=self.app_local_path.joinpath("config.json")
+        )
 
     # PROPERTIES #
 
@@ -536,9 +555,18 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
     # SETTINGS FUNCTIONS #
 
+    def update_settings(self, update):
+        self.config.set_many(update.as_dict())
+        self.config.save()
+
     def window_settings(self):
         """Settings Dialog."""
-        pass
+        config_dialog = ConfigDialog(self.config, self, cols=1)
+        config_dialog.setWindowTitle("Settings")
+        config_dialog.accepted.connect(
+            lambda: self.update_settings(config_dialog.config)
+        )
+        config_dialog.exec()
 
     # ACTIONS ON CHANGED MODEL VIEWS #
 
