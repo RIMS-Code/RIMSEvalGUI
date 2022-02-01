@@ -29,10 +29,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.crd_files = None
 
         # local profile
-        # fixme change user path back to home only
-        self.user_folder = Path.home().joinpath(
-            "Documents/ztmp/test"
-        )  # initialize, update as necessary
+        self.user_folder = Path.home()
         self.app_local_path = None  # home path for the application configs, etc.
         self.init_local_profile()
 
@@ -238,9 +235,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self,
         )
         integrals_draw_action.setStatusTip("Define integrals by drawing them")
-        integrals_draw_action.triggered.connect(
-            lambda val=False: self.save_calibration(val)
-        )
+        integrals_draw_action.triggered.connect(self.integrals_draw)
         self.integrals_menu.addAction(integrals_draw_action)
         tool_bar.addAction(integrals_draw_action)
         self.integrals_draw_action = integrals_draw_action
@@ -523,9 +518,29 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self.user_folder = file_paths[0].parent
 
             self.crd_files = rimseval.MultiFileProcessor(file_paths)
+            self.crd_files.open_files()  # open, but no read
+
+            # apply specifications if here:
+            for crd in self.crd_files.files:
+                if (calfile := crd.fname.with_suffix(".json")).is_file():
+                    pass
+                elif (
+                    calfile := self.app_local_path.joinpath("calibration.json")
+                ).is_file():
+                    pass
+                else:
+                    calfile = None
+                if calfile:
+                    rimseval.interfacer.load_cal_file(crd, calfile)
 
             if self.config.get("Calculate on open"):
+
                 self.crd_files.read_files()
+
+                # mass calibration
+                for crd in self.crd_files.files:
+                    if crd.def_mcal is not None:
+                        crd.mass_calibration()
 
             self.file_names_model.set_new_list(file_paths)
 
@@ -536,7 +551,18 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
         :param save_as: If True, brings up a dialog to save calibration to given file.
         """
-        print(save_as)
+        if save_as:
+            query = QtWidgets.QFileDialog.getSaveFileName(
+                self,
+                caption="Save calibration file as",
+                directory=str(self.user_folder.absolute()),
+                filter="JSON Files (*.json)",
+            )
+            if query[0]:
+                fname = Path(query[0]).with_suffix(".json")
+        else:
+            fname = None
+        rimseval.interfacer.save_cal_file(self.current_crd_file, fname=fname)
 
     # MASS CALIBRATION FUNCTIONS #
     def create_mass_calibration(self):
@@ -558,7 +584,12 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
     def integrals_draw(self):
         """Enable user to draw integrals."""
-        pass
+        logy = self.config.get("Plot with log y-axis")
+        theme = self.config.get("Theme")
+        window = rimseval.guis.integrals.DefineIntegrals(
+            self.current_crd_file, logy=logy, theme=theme
+        )
+        window.show()
 
     def integrals_set_edit(self):
         """Enable user to set integrals with a table widget."""
