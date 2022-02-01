@@ -540,6 +540,12 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
     # MASS CALIBRATION FUNCTIONS #
     def create_mass_calibration(self):
         """Enable user to create a mass calibration."""
+        logy = self.config.get("Plot with log y-axis")
+        theme = self.config.get("Theme")
+        window = rimseval.guis.mcal.CreateMassCalibration(
+            self.current_crd_file, logy=logy, theme=theme
+        )
+        window.show()
 
     def edit_mass_calibration(self):
         """Edit the mass calibration."""
