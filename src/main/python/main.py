@@ -12,6 +12,7 @@ import rimseval
 
 from data_models import OpenFilesModel
 from data_views import OpenFilesListView
+from dialogs import MassCalDialog
 from elements import PeriodicTable
 from info_window import FileInfoWindow
 from plot_window import PlotWindow
@@ -66,7 +67,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.save_cal_action = None
         self.save_cal_as_action = None
         self.mass_cal_def_action = None
-        self.mass_cal_edit_action = None
+        self.mass_cal_show_action = None
         self.integrals_set_edit_action = None
         self.integrals_draw_action = None
         self.integrals_fitting_action = None
@@ -209,15 +210,15 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         tool_bar.addAction(mass_cal_def_action)
         self.mass_cal_def_action = mass_cal_def_action
 
-        mass_cal_edit_action = QtGui.QAction(
+        mass_cal_show_action = QtGui.QAction(
             QtGui.QIcon(None),
-            "Edit",
+            "Show current calibration",
             self,
         )
-        mass_cal_edit_action.setStatusTip("Edit the existing mass calibration")
-        mass_cal_edit_action.triggered.connect(self.edit_mass_calibration)
-        self.mass_cal_menu.addAction(mass_cal_edit_action)
-        self.mass_cal_def_action = mass_cal_def_action
+        mass_cal_show_action.setStatusTip("Show the existing mass calibration")
+        mass_cal_show_action.triggered.connect(self.show_mass_calibration)
+        self.mass_cal_menu.addAction(mass_cal_show_action)
+        self.mass_cal_show_action = mass_cal_show_action
 
         # INTEGRALS ACTIONS #
 
@@ -547,8 +548,11 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         )
         window.show()
 
-    def edit_mass_calibration(self):
-        """Edit the mass calibration."""
+    def show_mass_calibration(self):
+        """Show the current Mass calibration as a QDialog."""
+        if (mcal := self.current_crd_file.def_mcal) is not None:
+            dialog = MassCalDialog(mcal, parent=self)
+            dialog.exec()
 
     # INTEGRAL DEFINITION FUNCTIONS #
 
