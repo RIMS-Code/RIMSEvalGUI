@@ -631,9 +631,34 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
     # LST FILE FUNCTIONS #
 
-    def convert_lst_to_crd(self):
-        """Convert LST to CRD File(s)."""
-        pass
+    def convert_lst_to_crd(self, tagged=False):
+        """Convert LST to CRD File(s).
+
+        :param tagged: Split tagged data?
+        """
+        query = QtWidgets.QFileDialog.getOpenFileNames(
+            self,
+            "Open LST File(s)",
+            directory=str(self.user_folder.absolute()),
+            filter="LST Files (*.lst)",
+        )[0]
+
+        if len(query) > 0:
+            fnames = [Path(it) for it in query]
+            channel = self.config.get("Signal Channel")
+            if tagged:
+                tag = self.config.get("Tag Channel")
+            else:
+                tag = None
+            for fname in fnames:
+                try:
+                    lst = rimseval.data_io.lst_to_crd.LST2CRD(
+                        file_name=fname, channel_data=channel, channel_tag=tag
+                    )
+                    lst.read_list_file()
+                    lst.write_crd()
+                except OSError as err:
+                    QtWidgets.QMessageBox.warning(self, "LST File error", err.args[0])
 
     # EXPORT FUNCTIONS #
 
