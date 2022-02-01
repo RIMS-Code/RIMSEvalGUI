@@ -6,8 +6,8 @@ import sys
 from fbs_runtime.application_context.PyQt6 import ApplicationContext
 import fbs_runtime.platform as fbsrt_platform
 from PyQt6 import QtCore, QtGui, QtWidgets
-
 from pyqtconfig import ConfigDialog, ConfigManager
+import qdarktheme
 import rimseval
 
 from data_models import OpenFilesModel
@@ -42,7 +42,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
         # window titles and geometry
         self.setWindowTitle(f"RIMS Evaluation v{rimseval.__version__}")
-        self.setGeometry(QtCore.QRect(300, 300, 600, 200))
+        self.setGeometry(QtCore.QRect(300, 300, 700, 400))
 
         # views to access
         self.file_names_view = OpenFilesListView(self)
@@ -109,6 +109,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.init_menu_toolbar()
         self.init_main_widget()
         self.init_config_manager()
+
+        self.setStyleSheet(qdarktheme.load_stylesheet(self.config.get("Theme")))
 
     def init_local_profile(self):
         """Initialize a user's local profile, platform dependent."""
@@ -475,11 +477,20 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             "Signal Channel": 1,
             "Tag Channel": 2,
             "Peak FWHM (us)": 0.02,
+            "Theme": "light",
+        }
+
+        default_settings_metadata = {
+            "Theme": {
+                "preferred_handler": QtWidgets.QComboBox,
+                "preferred_map_dict": {"Dark Colors": "dark", "Light Colors": "light"},
+            }
         }
 
         self.config = ConfigManager(
             default_values, filename=self.app_local_path.joinpath("config.json")
         )
+        self.config.set_many_metadata(default_settings_metadata)
 
     # PROPERTIES #
 
@@ -633,6 +644,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
     def update_settings(self, update):
         self.config.set_many(update.as_dict())
         self.config.save()
+
+        self.setStyleSheet(qdarktheme.load_stylesheet(self.config.get("Theme")))
 
     def window_settings(self):
         """Settings Dialog."""

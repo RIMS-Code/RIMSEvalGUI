@@ -55,7 +55,7 @@ class PeriodicTable(QMainWindow):
             button.setFixedHeight(40)
 
             row, col, color = element_position_color(ele)
-            button.setStyleSheet(f"background-color: {color}")
+            button.setStyleSheet(f"background-color: {color}; color: '#444444';")
             self.main_layout.addWidget(button, row, col)
 
         # labels for lanthanides and actinides
