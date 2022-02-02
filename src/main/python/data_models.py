@@ -39,6 +39,7 @@ class OpenFilesModel(QtCore.QAbstractListModel):
                 return self.tick
 
     def rowCount(self, index) -> int:
+        """Return the row count."""
         return len(self.open_files)
 
     def update_current(self, ind: int) -> None:
@@ -56,3 +57,39 @@ class OpenFilesModel(QtCore.QAbstractListModel):
             status = True if it == self._currently_active else False
             self.open_files.append([status, name.with_suffix("").name])
         self.layoutChanged.emit()
+
+
+class IntegralDefinitionModel(QtCore.QAbstractTableModel):
+    """Abstract table model for the integral definitions."""
+
+    def __init__(self, *args, data=None, **kwargs):
+        """Initialize integrals definition model.
+
+        :param data: Integrals definition, directly from CRDProcessor -> def_integrals
+        """
+        super().__init__(*args, **kwargs)
+        self._names = data[0]
+        self._values = data[1]
+
+    def data(self, index, role):
+        if role == QtCore.Qt.ItemDataRole.DisplayRole:
+            if index.column() == 0:
+                value = self._names[index.row()]
+            else:
+                value = self._values[index.row() - 1][index.column()]
+            return str(value)
+
+    def rowCount(self, index):
+        return self._values.shape[0]
+
+    def columnCount(self, index):
+        return self._values.shape[1] + 1
+
+    # def headerData(self, section, orientation, role):
+    #     # section is the index of the column/row.
+    #     if role == Qt.ItemDataRole.DisplayRole:
+    #         if orientation == Qt.Orientation.Horizontal:
+    #             return str(self._data.columns[section])
+    #
+    #         if orientation == Qt.Orientation.Vertical:
+    #             return str(self._data.index[section])
