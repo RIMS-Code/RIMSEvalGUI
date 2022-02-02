@@ -20,6 +20,8 @@ class OpenFilesListView(QtWidgets.QListView):
             QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection
         )
 
+        self.setResizeMode(QtWidgets.QListView.ResizeMode.Adjust)
+
 
 class EditableTableView(QtWidgets.QTableView):
     """Editable table view for managing models."""
@@ -30,3 +32,8 @@ class EditableTableView(QtWidgets.QTableView):
         :param parent: Parent widget.
         """
         super().__init__(parent)
+        self.setFixedHeight(350)
+        self.setSizeAdjustPolicy(
+            QtWidgets.QAbstractScrollArea.SizeAdjustPolicy.AdjustToContentsOnFirstShow
+        )
+        self.resizeColumnsToContents()

@@ -10,9 +10,9 @@ from pyqtconfig import ConfigDialog, ConfigManager
 import qdarktheme
 import rimseval
 
-from data_models import OpenFilesModel
+from data_models import OpenFilesModel, IntegralDefinitionModel
 from data_views import OpenFilesListView
-from dialogs import MassCalDialog
+from dialogs import IntegralEditDialog, MassCalDialog
 from elements import PeriodicTable
 from info_window import FileInfoWindow
 from plot_window import PlotWindow
@@ -628,7 +628,10 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
     def integrals_set_edit(self):
         """Enable user to set integrals with a table widget."""
-        pass
+        model = IntegralDefinitionModel(self.current_crd_file.def_integrals)
+        dialog = IntegralEditDialog(model, parent=self)
+        if dialog.exec():
+            self.current_crd_file.def_integrals = model.return_data()
 
     def integrals_fitting(self):
         """Define integrals by fitting them."""
