@@ -485,6 +485,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         default_values = {
             "Plot with log y-axis": True,
             "Calculate on open": True,
+            "Optimize Mass Calibration": True,
             "Signal Channel": 1,
             "Tag Channel": 2,
             "Peak FWHM (us)": 0.02,
