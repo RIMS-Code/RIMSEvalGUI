@@ -61,6 +61,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.settings_menu = menu_bar.addMenu("Settings")
 
         # actions
+        self.load_cal_action = None
         self.save_cal_action = None
         self.save_cal_as_action = None
         self.mass_cal_def_action = None
@@ -133,6 +134,10 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             "Select multiple with Shift / Ctrl for batch processing."
         )
 
+        # FILE ACTIONS #
+
+        # INTEGRALS VIEW #
+
         layout.addWidget(self.file_names_view)
         self.main_widget.setLayout(layout)
 
@@ -156,6 +161,17 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.file_menu.addAction(open_crd_action)
         tool_bar.addAction(open_crd_action)
 
+        load_cal_action = QtGui.QAction(
+            QtGui.QIcon(None),
+            "Load calibration",
+            self,
+        )
+        load_cal_action.setStatusTip("Load calibration file")
+        load_cal_action.triggered.connect(self.load_calibration)
+        self.file_menu.addSeparator()
+        self.file_menu.addAction(load_cal_action)
+        self.load_cal_action = load_cal_action
+
         save_cal_action = QtGui.QAction(
             QtGui.QIcon(self.appctxt.get_resource("icons/disk-black.png")),
             "Save Calibration",
@@ -164,7 +180,6 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         save_cal_action.setStatusTip("Save calibration to default file")
         save_cal_action.setShortcut(QtGui.QKeySequence("Ctrl+s"))
         save_cal_action.triggered.connect(self.save_calibration)
-        self.file_menu.addSeparator()
         self.file_menu.addAction(save_cal_action)
         tool_bar.addAction(save_cal_action)
         self.save_cal_action = save_cal_action
@@ -545,6 +560,26 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self.file_names_model.set_new_list(file_paths)
 
             self.update_info_window(update_all=True)
+
+    def load_calibration(self, fname: Path = None):
+        """Load a specific calibration file.
+
+        :param fname: If None, then bring up a dialog to query for the file.
+        """
+        if fname is None:
+            query = QtWidgets.QFileDialog.getOpenFileName(
+                self,
+                "Open Calibration File",
+                str(self.user_folder.absolute()),
+                "JSON Files (*.json)",
+            )[0]
+            fname = Path(query)
+
+        rimseval.interfacer.load_cal_file(self.current_crd_file, fname)
+
+        if self.config.get("Calculate on open"):
+            # todo: calculate on open
+            pass
 
     def save_calibration(self, save_as: bool = False):
         """Save Calibration.
