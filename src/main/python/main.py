@@ -10,9 +10,9 @@ from pyqtconfig import ConfigDialog, ConfigManager
 import qdarktheme
 import rimseval
 
-from data_models import OpenFilesModel, IntegralDefinitionModel
+from data_models import IntegralBackgroundDefinitionModel, OpenFilesModel
 from data_views import OpenFilesListView
-from dialogs import IntegralEditDialog, MassCalDialog
+from dialogs import BackgroundEditDialog, IntegralEditDialog, MassCalDialog
 from elements import PeriodicTable
 from info_window import FileInfoWindow
 from plot_window import PlotWindow
@@ -628,7 +628,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
     def integrals_set_edit(self):
         """Enable user to set integrals with a table widget."""
-        model = IntegralDefinitionModel(self.current_crd_file.def_integrals)
+        model = IntegralBackgroundDefinitionModel(self.current_crd_file.def_integrals)
         dialog = IntegralEditDialog(model, parent=self)
         if dialog.exec():
             self.current_crd_file.def_integrals = model.return_data()
@@ -648,11 +648,21 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
     def backgrounds_draw(self):
         """Open GUI for user to draw backgrounds."""
-        pass
+        logy = self.config.get("Plot with log y-axis")
+        theme = self.config.get("Theme")
+        window = rimseval.guis.integrals.DefineBackgrounds(
+            self.current_crd_file, logy=logy, theme=theme
+        )
+        window.show()
 
     def backgrounds_set_edit(self):
         """Open GUI for user to set / edit backgrounds by hand."""
-        pass
+        model = IntegralBackgroundDefinitionModel(self.current_crd_file.def_backgrounds)
+        dialog = BackgroundEditDialog(
+            model, self.current_crd_file.def_integrals[0], parent=self
+        )
+        if dialog.exec():
+            self.current_crd_file.def_backgrounds = model.return_data()
 
     # CALCULATE FUNCTIONS #
 

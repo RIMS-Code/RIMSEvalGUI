@@ -1,17 +1,93 @@
 """File to show my own PyQtDialogs."""
 
+from typing import List
+
 from PyQt6 import QtGui, QtWidgets
 import numpy as np
 from rimseval.utilities import ini
 
-from data_models import IntegralDefinitionModel
-from data_views import EditableTableView
+from data_models import IntegralBackgroundDefinitionModel
+from data_views import IntegralBackgroundTableView
+
+
+class BackgroundEditDialog(QtWidgets.QDialog):
+    """Set / Edit backgrounds dialog."""
+
+    def __init__(
+        self, model: IntegralBackgroundDefinitionModel, peaks: List, parent=None
+    ):
+        """Initialize the dialog
+
+        :param model: Model to set to ``EditableTableView``
+        :param peaks: List of defined peak names
+        :param parent: Parent widget
+        """
+        super().__init__(parent)
+
+        self.peaks = peaks
+
+        self.setWindowTitle("Add / Edit Backgrounds")
+
+        self.table_edit = IntegralBackgroundTableView()
+        self.model = model
+        self.table_edit.setModel(self.model)
+
+        self.init_ui()
+
+    def init_ui(self):
+        """Initialize the dialog."""
+        layout = QtWidgets.QVBoxLayout()
+
+        layout.addWidget(self.table_edit)
+
+        clear_all_button = QtWidgets.QPushButton("Clear All")
+        clear_all_button.clicked.connect(self.clear_all)
+        add_row_button = QtWidgets.QPushButton("Add Row")
+        add_row_button.clicked.connect(self.add_row)
+        tmp_layout = QtWidgets.QHBoxLayout()
+        tmp_layout.addStretch()
+        tmp_layout.addWidget(clear_all_button)
+        tmp_layout.addWidget(add_row_button)
+        layout.addLayout(tmp_layout)
+
+        button_box = QtWidgets.QDialogButtonBox(
+            QtWidgets.QDialogButtonBox.StandardButton.Cancel
+            | QtWidgets.QDialogButtonBox.StandardButton.Ok
+        )
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+
+        layout.addWidget(button_box)
+        self.setLayout(layout)
+
+    def accept(self) -> None:
+        """Ensure that the names are unique and accept."""
+        peak_list_str = "\n".join(self.peaks)
+        self.model.remove_empties()
+        for name in self.model.names:
+            if name not in self.peaks:
+                QtWidgets.QMessageBox.warning(
+                    self,
+                    "Undefined Peak",
+                    f"The given names must be in the background list. However, "
+                    f"{name} is not in the peak list. Valid peaks are:\n"
+                    f"{peak_list_str}",
+                )
+        super().accept()
+
+    def add_row(self):
+        """Add a row to the data."""
+        self.model.add_row()
+
+    def clear_all(self):
+        """Clear all data and add 10 empty rows."""
+        self.model.init_empty()
 
 
 class IntegralEditDialog(QtWidgets.QDialog):
     """Set / Edit integrals dialog."""
 
-    def __init__(self, model: IntegralDefinitionModel, parent=None):
+    def __init__(self, model: IntegralBackgroundDefinitionModel, parent=None):
         """Initialize the dialog
 
         :param model: Model to set to ``EditableTableView``
@@ -23,17 +99,11 @@ class IntegralEditDialog(QtWidgets.QDialog):
 
         self.lower_limit_autofill = QtWidgets.QDoubleSpinBox()
         self.upper_limit_autofill = QtWidgets.QDoubleSpinBox()
-        self.table_widget = QtWidgets.QLabel()
-        self.table_edit = EditableTableView(self.table_widget)
+        self.table_edit = IntegralBackgroundTableView()
         self.model = model
         self.table_edit.setModel(self.model)
 
         self.init_ui()
-
-        self.setFixedSize(
-            self.layout().sizeHint().width(),
-            self.table_widget.height(),
-        )
 
     def init_ui(self):
         """Initialize the dialog."""
@@ -56,7 +126,7 @@ class IntegralEditDialog(QtWidgets.QDialog):
 
         layout.addLayout(auto_layout)
 
-        layout.addWidget(self.table_widget)
+        layout.addWidget(self.table_edit)
 
         clear_all_button = QtWidgets.QPushButton("Clear All")
         clear_all_button.clicked.connect(self.clear_all)

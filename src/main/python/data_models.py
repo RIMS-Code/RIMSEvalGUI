@@ -60,7 +60,7 @@ class OpenFilesModel(QtCore.QAbstractListModel):
         self.layoutChanged.emit()
 
 
-class IntegralDefinitionModel(QtCore.QAbstractTableModel):
+class IntegralBackgroundDefinitionModel(QtCore.QAbstractTableModel):
     """Abstract table model for the integral definitions."""
 
     def __init__(self, data=None):

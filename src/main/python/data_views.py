@@ -23,16 +23,16 @@ class OpenFilesListView(QtWidgets.QListView):
         self.setResizeMode(QtWidgets.QListView.ResizeMode.Adjust)
 
 
-class EditableTableView(QtWidgets.QTableView):
+class IntegralBackgroundTableView(QtWidgets.QTableView):
     """Editable table view for managing models."""
 
-    def __init__(self, parent):
+    def __init__(self, parent=None):
         """Initialize widget.
 
         :param parent: Parent widget.
         """
         super().__init__(parent)
-        self.setFixedHeight(350)
+        self.setFixedHeight(350)  # to not have to scroll too frequently
         self.setSizeAdjustPolicy(
             QtWidgets.QAbstractScrollArea.SizeAdjustPolicy.AdjustToContentsOnFirstShow
         )
