@@ -15,7 +15,7 @@ class OpenFilesListView(QtWidgets.QListView):
         :param parent: Parent widget.
         """
         super().__init__(parent)
-
+        self.setMinimumWidth(400)
         self.setSelectionMode(
             QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection
         )
@@ -35,5 +35,21 @@ class IntegralBackgroundTableView(QtWidgets.QTableView):
         self.setFixedHeight(350)  # to not have to scroll too frequently
         self.setSizeAdjustPolicy(
             QtWidgets.QAbstractScrollArea.SizeAdjustPolicy.AdjustToContentsOnFirstShow
+        )
+        self.resizeColumnsToContents()
+
+
+class IntegralsDisplay(QtWidgets.QTableView):
+    """Widget for integrals."""
+
+    def __init__(self, parent=None):
+        """Initialize the widget.
+
+        :param parent: Parent widget.
+        """
+        super().__init__(parent)
+        self.setMinimumWidth(400)
+        self.setSizeAdjustPolicy(
+            QtWidgets.QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents
         )
         self.resizeColumnsToContents()

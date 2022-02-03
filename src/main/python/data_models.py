@@ -60,6 +60,76 @@ class OpenFilesModel(QtCore.QAbstractListModel):
         self.layoutChanged.emit()
 
 
+class IntegralsModel(QtCore.QAbstractTableModel):
+    """Data model for integrals."""
+
+    def __init__(self, data=None, names=None):
+        """Initialize the integral model.
+
+        :param data: Integrals, from ``CRDProcessor.integrals``.
+        """
+        super().__init__()
+        self._names = names
+        self._header = ["Counts", "Uncertainty"]
+
+        if data is None:
+            self._data = np.empty((0, 0))
+
+    def columnCount(self, index):
+        """Return the number of columns."""
+        return self._data.shape[1]
+
+    def data(self, index, role):
+        """Return the data."""
+        if role == QtCore.Qt.ItemDataRole.DisplayRole:
+            value = np.round(self._data[index.row()][index.column()], 2)
+            return str(value)
+
+    def headerData(self, section, orientation, role):
+        # section is the index of the column/row.
+        if role == QtCore.Qt.ItemDataRole.DisplayRole:
+            if orientation == QtCore.Qt.Orientation.Horizontal:
+                return str(self._header[section])
+            if orientation == QtCore.Qt.Orientation.Vertical:
+                return str(self._names[section])
+
+    def rowCount(self, index):
+        """Return the number of rows."""
+        return self._data.shape[0]
+
+    def get_integrals_to_copy(self, names: bool = False, unc: bool = True) -> str:
+        """Get string with the data to copy to clipboard.
+
+        :param names: Copy the names of the peaks as well?
+        :param unc: Copy uncertainties as well?
+        """
+        if self._names is None:
+            return ""
+
+        ret_str = ""
+        if names:
+            for it, name in enumerate(self._names):
+                ret_str += f"{name}\t{name}_1sig" if unc else f"{name}"
+                if it < len(self._names) - 1:
+                    ret_str += "\t"
+            ret_str += "\n"
+        for it, val in enumerate(self._data):
+            ret_str += f"{val[0]}\t{val[1]}" if unc else f"{val[0]}"
+            if it < len(self._data) - 1:
+                ret_str += "\t"
+        return ret_str
+
+    def update_data(self, data: np.ndarray, names: List[str]):
+        """Update the model with new data.
+
+        :param data: Data to set
+        :param names: Names of the peaks
+        """
+        self._names = names
+        self._data = data
+        self.layoutChanged.emit()
+
+
 class IntegralBackgroundDefinitionModel(QtCore.QAbstractTableModel):
     """Abstract table model for the integral definitions."""
 

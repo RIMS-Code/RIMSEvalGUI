@@ -1,17 +1,23 @@
 """Main RIMSEval graphical user interface."""
 
+import itertools
 from pathlib import Path
 import sys
 
 from fbs_runtime.application_context.PyQt6 import ApplicationContext
 import fbs_runtime.platform as fbsrt_platform
+import numpy as np
 from PyQt6 import QtCore, QtGui, QtWidgets
 from pyqtconfig import ConfigDialog, ConfigManager
 import qdarktheme
 import rimseval
 
-from data_models import IntegralBackgroundDefinitionModel, OpenFilesModel
-from data_views import OpenFilesListView
+from data_models import (
+    IntegralsModel,
+    IntegralBackgroundDefinitionModel,
+    OpenFilesModel,
+)
+from data_views import IntegralsDisplay, OpenFilesListView
 from dialogs import BackgroundEditDialog, IntegralEditDialog, MassCalDialog
 from elements import PeriodicTable
 from info_window import FileInfoWindow
@@ -40,13 +46,14 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
         # window titles and geometry
         self.setWindowTitle(f"RIMS Evaluation v{rimseval.__version__}")
-        self.setGeometry(QtCore.QRect(300, 300, 700, 400))
+        self.setGeometry(QtCore.QRect(300, 300, 700, 100))
 
         # views to access
         self.file_names_view = OpenFilesListView(self)
         self.file_names_model = OpenFilesModel(
             tick=self.appctxt.get_resource("icons/tick.png")
         )  # empty model
+        self.integrals_model = IntegralsModel()
 
         # menu bar
         menu_bar = self.menuBar()
@@ -70,7 +77,9 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.integrals_draw_action = None
         self.integrals_fitting_action = None
         self.integrals_copy_action = None
+        self.integrals_copy_w_names_action = None
         self.integrals_copy_pkg_action = None
+        self.integrals_copy_pkg_w_names_action = None
         self.backgrounds_draw_action = None
         self.backgrounds_set_edit_action = None
         self.calculate_single_action = None
@@ -82,6 +91,28 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.window_elements_action = None
         self.window_info_action = None
         self.window_plot_action = None
+
+        # crd file controls
+        self.control_spectrum_part = [QtWidgets.QCheckBox(), QtWidgets.QLineEdit()]
+        self.control_max_ions_per_shot = [QtWidgets.QCheckBox(), QtWidgets.QSpinBox()]
+        self.control_max_ions_per_time = [
+            QtWidgets.QCheckBox(),
+            QtWidgets.QSpinBox(),
+            QtWidgets.QDoubleSpinBox(),
+        ]
+        self.control_max_ions_per_tof_window = [
+            QtWidgets.QCheckBox(),
+            QtWidgets.QSpinBox(),
+            QtWidgets.QDoubleSpinBox(),
+            QtWidgets.QDoubleSpinBox(),
+        ]
+        self.control_packages = [QtWidgets.QCheckBox(), QtWidgets.QSpinBox()]
+        self.control_max_ions_per_pkg = [QtWidgets.QCheckBox(), QtWidgets.QSpinBox()]
+        self.control_dead_time_correction = [
+            QtWidgets.QCheckBox(),
+            QtWidgets.QSpinBox(),
+        ]
+        self.control_bg_correction = QtWidgets.QCheckBox()
 
         # other windows
         self.elements_window = PeriodicTable(self)
@@ -133,12 +164,131 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             "Double click file to make current.\n"
             "Select multiple with Shift / Ctrl for batch processing."
         )
+        layout.addWidget(self.file_names_view)
 
-        # FILE ACTIONS #
+        # FILE CONTROL #
+        control_layout = QtWidgets.QVBoxLayout()
+
+        tmphbox = QtWidgets.QHBoxLayout()
+        self.control_spectrum_part[0].setText("Cut Shot Range")
+        self.control_spectrum_part[0].setToolTip("Cut out part of the shot range.")
+        tmphbox.addWidget(self.control_spectrum_part[0])
+        tmphbox.addStretch()
+        self.control_spectrum_part[1].setToolTip(
+            "Set regions to cut comma separated.\n"
+            "The first shots starts at 1.\n"
+            "You can set more than 1 region."
+        )
+        tmphbox.addWidget(self.control_spectrum_part[1])
+        control_layout.addLayout(tmphbox)
+
+        tmphbox = QtWidgets.QHBoxLayout()
+        self.control_max_ions_per_shot[0].setText("Max ions / shot")
+        self.control_max_ions_per_shot[0].setToolTip(
+            "Filter for maximum number of ions per shot."
+        )
+        tmphbox.addWidget(self.control_max_ions_per_shot[0])
+        tmphbox.addStretch()
+        self.control_max_ions_per_shot[1].setRange(1, 99999)
+        self.control_max_ions_per_shot[1].setToolTip("Maximum number of ions")
+        tmphbox.addWidget(self.control_max_ions_per_shot[1])
+        control_layout.addLayout(tmphbox)
+
+        tmphbox = QtWidgets.QHBoxLayout()
+        self.control_max_ions_per_time[0].setText("Max ions / time")
+        self.control_max_ions_per_time[0].setToolTip(
+            "Filter maximum number of ions allowed per time (us)."
+        )
+        tmphbox.addWidget(self.control_max_ions_per_time[0])
+        tmphbox.addStretch()
+        self.control_max_ions_per_time[1].setRange(1, 99999)
+        self.control_max_ions_per_time[1].setToolTip("Maximum number of ions")
+        tmphbox.addWidget(self.control_max_ions_per_time[1])
+        self.control_max_ions_per_time[2].setRange(0, 999)
+        self.control_max_ions_per_time[2].setToolTip("Time in us")
+        tmphbox.addWidget(self.control_max_ions_per_time[2])
+        control_layout.addLayout(tmphbox)
+
+        tmphbox = QtWidgets.QHBoxLayout()
+        self.control_max_ions_per_tof_window[0].setText("Max ions / ToF Window")
+        self.control_max_ions_per_tof_window[0].setToolTip(
+            "Filter maximum number of ions allowed in ToF window."
+        )
+        tmphbox.addWidget(self.control_max_ions_per_tof_window[0])
+        tmphbox.addStretch()
+        self.control_max_ions_per_tof_window[1].setRange(1, 99999)
+        self.control_max_ions_per_tof_window[1].setToolTip("Maximum number of ions")
+        tmphbox.addWidget(self.control_max_ions_per_tof_window[1])
+        self.control_max_ions_per_tof_window[2].setRange(0, 999)
+        self.control_max_ions_per_tof_window[2].setToolTip("Window start ToF (us)")
+        tmphbox.addWidget(self.control_max_ions_per_tof_window[2])
+        self.control_max_ions_per_tof_window[3].setRange(0, 999)
+        self.control_max_ions_per_tof_window[3].setToolTip("Window end ToF (us)")
+        tmphbox.addWidget(self.control_max_ions_per_tof_window[3])
+        control_layout.addLayout(tmphbox)
+
+        tmphbox = QtWidgets.QHBoxLayout()
+        self.control_packages[0].setText("Packages")
+        self.control_packages[0].setToolTip(
+            "Create packages with given number of shots per package."
+        )
+        tmphbox.addWidget(self.control_packages[0])
+        tmphbox.addStretch()
+        self.control_packages[1].setRange(1, 99999)
+        self.control_packages[1].setToolTip("Number of shots per package")
+        tmphbox.addWidget(self.control_packages[1])
+        control_layout.addLayout(tmphbox)
+
+        tmphbox = QtWidgets.QHBoxLayout()
+        self.control_max_ions_per_pkg[0].setText("Max ions / package")
+        self.control_max_ions_per_pkg[0].setToolTip(
+            "Filter the maximum number of ions per package."
+        )
+        tmphbox.addWidget(self.control_max_ions_per_pkg[0])
+        tmphbox.addStretch()
+        self.control_max_ions_per_pkg[1].setRange(1, 99999)
+        self.control_max_ions_per_pkg[1].setToolTip("Maximum number of ions")
+        tmphbox.addWidget(self.control_max_ions_per_pkg[1])
+        control_layout.addLayout(tmphbox)
+
+        tmphbox = QtWidgets.QHBoxLayout()
+        self.control_dead_time_correction[0].setText("Dead time correction")
+        self.control_dead_time_correction[0].setToolTip(
+            "Correct spectrum for dead time effects"
+        )
+        tmphbox.addWidget(self.control_dead_time_correction[0])
+        tmphbox.addStretch()
+        self.control_dead_time_correction[1].setRange(1, 99999)
+        self.control_dead_time_correction[1].setToolTip(
+            "Enter number of bins that are dead after ion arrival"
+        )
+        tmphbox.addWidget(self.control_dead_time_correction[1])
+        control_layout.addLayout(tmphbox)
+
+        separator = QtWidgets.QFrame()
+        separator.setFrameShape(QtWidgets.QFrame.Shape.HLine)
+        separator.setFixedHeight(1)
+        separator.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding
+        )
+        control_layout.addWidget(separator)
+
+        tmphbox = QtWidgets.QHBoxLayout()
+        self.control_bg_correction.setText("Integral Background Correction")
+        self.control_bg_correction.setToolTip(
+            "Toggle background correction for integrals, if set."
+        )
+        tmphbox.addWidget(self.control_bg_correction)
+        tmphbox.addStretch()
+        control_layout.addLayout(tmphbox)
+
+        layout.addLayout(control_layout)
 
         # INTEGRALS VIEW #
+        integral_display = IntegralsDisplay(self)
+        integral_display.setModel(self.integrals_model)
+        layout.addWidget(integral_display)
 
-        layout.addWidget(self.file_names_view)
         self.main_widget.setLayout(layout)
 
     def init_menu_toolbar(self):
@@ -281,6 +431,20 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         tool_bar.addAction(integrals_copy_action)
         self.integrals_copy_action = integrals_copy_action
 
+        integrals_copy_w_names_action = QtGui.QAction(
+            QtGui.QIcon(None),
+            "Copy Integrals w/ header",
+            self,
+        )
+        integrals_copy_w_names_action.setStatusTip(
+            "Copy all peak names and integrals to the clipboard"
+        )
+        integrals_copy_w_names_action.triggered.connect(
+            lambda: self.integrals_copy_to_clipboard(get_names=True)
+        )
+        self.integrals_menu.addAction(integrals_copy_w_names_action)
+        self.integrals_copy_w_names_action = integrals_copy_w_names_action
+
         integrals_copy_pkg_action = QtGui.QAction(
             QtGui.QIcon(None),
             "Copy Integrals Packages",
@@ -294,6 +458,20 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         )
         self.integrals_menu.addAction(integrals_copy_pkg_action)
         self.integrals_copy_pkg_action = integrals_copy_pkg_action
+
+        integrals_copy_pkg_w_names_action = QtGui.QAction(
+            QtGui.QIcon(None),
+            "Copy Integrals Packages w/ header",
+            self,
+        )
+        integrals_copy_pkg_w_names_action.setStatusTip(
+            "Copy peak names and integrals of all packages to the clipboard"
+        )
+        integrals_copy_pkg_w_names_action.triggered.connect(
+            lambda: self.integrals_pkg_copy_to_clipboard(get_names=True)
+        )
+        self.integrals_menu.addAction(integrals_copy_pkg_w_names_action)
+        self.integrals_copy_pkg_w_names_action = integrals_copy_pkg_w_names_action
 
         backgrounds_draw_action = QtGui.QAction(
             QtGui.QIcon(None),
@@ -489,6 +667,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             "Signal Channel": 1,
             "Tag Channel": 2,
             "Peak FWHM (us)": 0.02,
+            "Copy integrals w/ unc.": True,
             "Theme": "light",
         }
 
@@ -507,7 +686,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
     # PROPERTIES #
 
     @property
-    def current_crd_file(self):
+    def current_crd_file(self) -> rimseval.CRDFileProcessor:
         """Return currently active CRD file."""
         if self.crd_files is not None:
             return self.crd_files.files[self.file_names_model.currently_active]
@@ -639,13 +818,46 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         # todo in second version
         raise NotImplementedError
 
-    def integrals_copy_to_clipboard(self):
-        """Copy the integrals to the clipboard for pasting into, e.g., Excel."""
-        pass
+    def integrals_copy_to_clipboard(self, get_names: bool = False):
+        """Copy the integrals to the clipboard for pasting into, e.g., Excel.
 
-    def integrals_pkg_copy_to_clipboard(self):
-        """Copy the integrals to the clipboard for pasting into, e.g., Excel."""
-        pass
+        :param get_names: Copy names of peaks as well?
+        """
+        get_unc = self.config.get("Copy integrals w/ unc.")
+        QtWidgets.QApplication.clipboard().setText(
+            self.integrals_model.get_integrals_to_copy(names=get_names, unc=get_unc)
+        )
+
+    def integrals_pkg_copy_to_clipboard(self, get_names: bool = False):
+        """Copy the integrals to the clipboard for pasting into, e.g., Excel.
+
+        :param get_names: Copy names of peaks as well?
+        """
+        data = self.current_crd_file.integrals_pkg
+        if data is None:
+            QtWidgets.QMessageBox.warning(
+                self, "No data", "No package data is available"
+            )
+            return
+
+        get_unc = self.config.get("Copy integrals w/ unc.")
+        ret_str = ""
+
+        if get_names:
+            names = self.current_crd_file.def_integrals[0]
+            for col, name in enumerate(names):
+                ret_str += f"{name}\t{name}_1sig" if get_unc else f"{name}"
+                if col < len(names) - 1:
+                    ret_str += "\t"
+            ret_str += "\n"
+
+        for row in data:
+            for col, val in enumerate(row):
+                ret_str += f"{val[0]}\t{val[1]}" if get_unc else f"{val[0]}"
+                if col < len(row) - 1:
+                    ret_str += "\t"
+            ret_str += "\n"
+        QtWidgets.QApplication.clipboard().setText(ret_str)
 
     def backgrounds_draw(self):
         """Open GUI for user to draw backgrounds."""
@@ -669,7 +881,39 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
     def calculate_single(self):
         """Applies the currently displayed settings to the displayed CRD file."""
-        pass
+        # run mass calibration if necessary
+        if (
+            self.current_crd_file.def_mcal is not None
+            and self.current_crd_file.mass is None
+        ):
+            self.current_crd_file.mass_calibration()
+
+        # calculate file
+        if not self.set_filters_from_controls():
+            return
+
+        try:
+            self.current_crd_file.calculate_applied_filters()
+        except Exception as err:
+            QtWidgets.QMessageBox.warning(self, "Error in calculation", err.args[0])
+            return
+
+        # integrals
+        if self.current_crd_file.def_integrals is not None:
+            bg_corr = (
+                self.control_bg_correction.isChecked()
+                and self.current_crd_file.def_backgrounds is not None
+            )
+            self.current_crd_file.integrals_calc(bg_corr=bg_corr)
+
+            # update integral model
+            self.integrals_model.update_data(
+                data=self.current_crd_file.integrals,
+                names=self.current_crd_file.def_integrals[0],
+            )
+
+        # update stuff
+        self.update_info_window()
 
     def calculate_batch(self):
         """Applies the currently congured settings to all open CRD files."""
@@ -716,7 +960,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
         :param tof: If true, export ToF spectrum, otherwise mass spectrum.
         """
-        print(tof)
+        pass
 
     # SPECIAL FUNCTIONS #
 
@@ -780,6 +1024,9 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         # update windows
         self.update_info_window(update_all=True)
 
+        # update controls
+        self.set_controls_from_filters()
+
     def update_info_window(self, update_all: bool = False) -> None:
         """Update the Info window.
 
@@ -789,6 +1036,121 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.info_window.update_current(crd_file)
         if update_all:
             self.info_window.update_header(crd_file)
+
+    def set_controls_from_filters(self):
+        """Set the UI controls from the current CRD filters."""
+        filters = self.current_crd_file.applied_filters
+
+        key = "spectrum_part"
+        if key in filters:
+            self.control_spectrum_part[0].setChecked(filters[key][0])
+            txt = ", ".join(list(itertools.chain(*filter[key][1])))
+            self.control_spectrum_part[1].setText(txt)
+
+        key = "max_ions_per_shot"
+        if key in filters:
+            self.control_max_ions_per_shot[0].setChecked(filters[key][0])
+            self.control_max_ions_per_shot[1].setValue(filters[key][1])
+
+        key = "max_ions_per_time"
+        if key in filters:
+            self.control_max_ions_per_time[0].setChecked(filters[key][0])
+            self.control_max_ions_per_time[1].setValue(filters[key][1])
+            self.control_max_ions_per_time[2].setValue(filters[key][2])
+
+        key = "max_ions_per_tof_window"
+        if key in filters:
+            self.control_max_ions_per_tof_window[0].setChecked(filters[key][0])
+            self.control_max_ions_per_tof_window[1].setValue(filters[key][1])
+            self.control_max_ions_per_tof_window[2].setValue(filters[key][2][0])
+            self.control_max_ions_per_tof_window[3].setValue(filters[key][2][1])
+
+        key = "packages"
+        if key in filters:
+            self.control_packages[0].setChecked(filters[key][0])
+            self.control_packages[1].setValue(filters[key][1])
+
+        key = "max_ions_per_pkg"
+        if key in filters:
+            self.control_max_ions_per_pkg[0].setChecked(filters[key][0])
+            self.control_max_ions_per_pkg[1].setValue(filters[key][1])
+
+        key = "dead_time_corr"
+        if key in filters:
+            self.control_dead_time_correction[0].setChecked(filters[key][0])
+            self.control_dead_time_correction[1].setValue(filters[key][1])
+
+    def set_filters_from_controls(self) -> bool:
+        """Set the CRD file applied filters from the given controls.
+
+        :return: False if it failed, otherwise True
+        """
+        filters = {}
+
+        if self.control_spectrum_part[0].isChecked():
+            vals = self.control_spectrum_part[1].text().replace(" ", "").split(",")
+            if len(vals) % 2 != 0 or len(vals) == 0:
+                QtWidgets.QMessageBox.warning(
+                    self,
+                    "Spectrum Cut invalid",
+                    "Please enter a valid range to cut the spectrum.",
+                )
+                return False
+            try:
+                vals_list = (
+                    np.array(vals, dtype=int).reshape((len(vals) // 2, 2)).to_list()
+                )
+            except Exception as err:
+                QtWidgets.QMessageBox.warning(
+                    self, "Spectrum cut parameters invalid", err.args[0]
+                )
+                return False
+
+            filters["spectrum_part"] = [
+                self.control_spectrum_part[0].isChecked(),
+                vals_list,
+            ]
+        else:
+            filters["spectrum_part"] = [False, []]
+
+        filters["max_ions_per_shot"] = [
+            self.control_max_ions_per_shot[0].isChecked(),
+            int(self.control_max_ions_per_shot[1].value()),
+        ]
+
+        filters["max_ions_per_time"] = [
+            self.control_max_ions_per_time[0].isChecked(),
+            int(self.control_max_ions_per_time[1].value()),
+            float(self.control_max_ions_per_time[2].value()),
+        ]
+
+        filters["max_ions_per_tof_window"] = [
+            self.control_max_ions_per_tof_window[0].isChecked(),
+            int(self.control_max_ions_per_tof_window[1].value()),
+            [
+                float(self.control_max_ions_per_tof_window[2].value()),
+                float(self.control_max_ions_per_tof_window[3].value()),
+            ],
+        ]
+
+        filters["packages"] = [
+            self.control_packages[0].isChecked(),
+            int(self.control_packages[1].value()),
+        ]
+
+        filters["max_ions_per_pkg"] = [
+            self.control_max_ions_per_pkg[0].isChecked(),
+            int(self.control_max_ions_per_pkg[1].value()),
+        ]
+
+        filters["dead_time_corr"] = [
+            self.control_dead_time_correction[0].isChecked(),
+            int(self.control_dead_time_correction[1].value()),
+        ]
+
+        self.current_crd_file.applied_filters = filters
+
+        return True  # all worked :)
 
 
 if __name__ == "__main__":
