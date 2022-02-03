@@ -141,6 +141,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.init_config_manager()
 
         self.setStyleSheet(qdarktheme.load_stylesheet(self.config.get("Theme")))
+        self.plot_window.set_theme(self.config.get("Theme"))
 
     def init_local_profile(self):
         """Initialize a user's local profile, platform dependent."""
@@ -912,15 +913,18 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
                 names=self.current_crd_file.def_integrals[0],
             )
 
+        # save calibration file
+        self.save_calibration()
+
         # update stuff
-        self.update_info_window()
+        self.update_info_window(update_all=False)
 
     def calculate_batch(self):
-        """Applies the currently congured settings to all open CRD files."""
+        """Applies the currently configured settings to all open CRD files."""
         # get the currently selected files
-        selected_models = self.file_names_view.selectedIndexes()
-        selected_indexes = [it.row() for it in selected_models]
-        print(selected_indexes)
+        # selected_models = self.file_names_view.selectedIndexes()
+        # selected_indexes = [it.row() for it in selected_models]
+        # print(selected_indexes)
 
     # LST FILE FUNCTIONS #
 
@@ -1005,6 +1009,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.config.save()
 
         self.setStyleSheet(qdarktheme.load_stylesheet(self.config.get("Theme")))
+        self.plot_window.set_theme(self.config.get("Theme"))
 
     def window_settings(self):
         """Settings Dialog."""
