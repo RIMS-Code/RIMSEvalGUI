@@ -773,6 +773,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
             if self.config.get("Calculate on open"):
                 self.crd_files.read_files()
+                if self.config.get("Optimize Mass Calibration"):
+                    self.optimize_mass_calibration()
                 self.calculate_single()
             else:
                 self.update_info_window(update_all=True)
@@ -827,9 +829,13 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
     # MASS CALIBRATION FUNCTIONS #
     def apply_mass_calibration(self):
         """Apply an already defined / imported mass calibration."""
-        if self.current_crd_file is not None:
-            if self.current_crd_file.def_mcal is not None:
-                self.current_crd_file.mass_calibration()
+        crd = self.current_crd_file
+        if crd is not None:
+            if crd.def_mcal is not None:
+                if crd.tof is None:
+                    crd.spectrum_full()
+                crd.mass_calibration()
+                self.update_all()
 
     def create_mass_calibration(self):
         """Enable user to create a mass calibration."""
@@ -843,7 +849,18 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
     def optimize_mass_calibration(self):
         """Optimize a given mass calibration by re-fitting all the peaks."""
-        pass
+        crd = self.current_crd_file
+        if crd is not None:
+            if crd.def_mcal is not None:
+                if crd.mass is None:
+                    self.apply_mass_calibration()
+                try:
+                    self.current_crd_file.optimize_mcal()
+                except Exception as err:
+                    QtWidgets.QMessageBox.warning(
+                        self, "Mass calibratiaon optimization failed", err.args[0]
+                    )
+                self.update_all()
 
     def show_mass_calibration(self):
         """Show the current Mass calibration as a QDialog."""
@@ -950,6 +967,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         # run mass calibration if necessary
         if crd.def_mcal is not None and crd.mass is None:
             crd.mass_calibration()
+            if self.config.get("Optimize Mass Calibrataion"):
+                self.optimize_mass_calibration()
 
         # calculate file
         if not self.set_filters_from_controls():
@@ -1217,12 +1236,13 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
     def update_all(self):
         """Update Actions, Info, and Plot."""
-        self.apply_mass_calibration()
+        self.update_info_window()
         self.update_plot_window()
         self.update_action_status()
 
     def update_action_status(self):
         """Sets the status of actions based on what the CRD file is capable of."""
+        crd = self.current_crd_file
         # turn all off
         all_actions = [
             self.load_cal_action,
@@ -1252,7 +1272,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         for action in all_actions:
             action.setDisabled(True)
 
-        if self.current_crd_file is None:
+        if crd is None:
             return
 
         crd_loaded_actions = [
@@ -1267,7 +1287,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             # todo self.special_hist_dt_ions_action,
             # todo self.special_hist_ions_shot_action,
         ]
-        if self.current_crd_file is not None:  # so we have a file!
+        if crd is not None:  # so we have a file!
             for action in crd_loaded_actions:
                 action.setEnabled(True)
 
@@ -1275,25 +1295,43 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self.mass_cal_apply_action,
             self.mass_cal_optimize_action,
             self.mass_cal_show_action,
+        ]
+        if crd.def_mcal is not None:
+            for action in mass_cal_exists_actions:
+                action.setEnabled(True)
+
+        mass_cal_applied_actions = [
             self.integrals_set_edit_action,
             self.integrals_draw_action,
             # todo self.integrals_fitting_action,
             # todo self.export_mass_spectrum_action,
         ]
-        if self.current_crd_file.def_mcal is not None:
-            for action in mass_cal_exists_actions:
+        if crd.mass is not None:
+            for action in mass_cal_applied_actions:
                 action.setEnabled(True)
 
-        integrals_defined_actions = [
+        integrals_available_actions = [
             self.integrals_copy_action,
             self.integrals_copy_w_names_action,
+        ]
+        if crd.integrals is not None:
+            for action in integrals_available_actions:
+                action.setEnabled(True)
+
+        integrals_pkg_actions = [
             self.integrals_copy_pkg_action,
-            self.backgrounds_draw_action,
-            self.backgrounds_set_edit_action,
             self.integrals_copy_pkg_w_names_action,
         ]
-        if self.current_crd_file.def_integrals is not None:
-            for action in integrals_defined_actions:
+        if crd.integrals_pkg is not None:
+            for action in integrals_pkg_actions:
+                action.setEnabled(True)
+
+        backgrounds_actions = [
+            self.backgrounds_draw_action,
+            self.backgrounds_set_edit_action,
+        ]
+        if crd.def_integrals is not None and crd.mass is not None:
+            for action in backgrounds_actions:
                 action.setEnabled(True)
 
     def update_info_window(self, update_all: bool = False) -> None:
