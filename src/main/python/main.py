@@ -70,9 +70,12 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
         # actions
         self.load_cal_action = None
+        self.load_lioneval_cal_action = None
         self.save_cal_action = None
         self.save_cal_as_action = None
         self.mass_cal_def_action = None
+        self.mass_cal_optimize_action = None
+        self.mass_cal_apply_action = None
         self.mass_cal_show_action = None
         self.integrals_set_edit_action = None
         self.integrals_draw_action = None
@@ -141,6 +144,9 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.init_main_widget()
 
         self.setStyleSheet(qdarktheme.load_stylesheet(self.config.get("Theme")))
+
+        # update actions
+        self.update_action_status()
 
     def init_local_profile(self):
         """Initialize a user's local profile, platform dependent."""
@@ -317,10 +323,20 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self,
         )
         load_cal_action.setStatusTip("Load calibration file")
-        load_cal_action.triggered.connect(self.load_calibration)
+        load_cal_action.triggered.connect(lambda: self.load_calibration(fname=None))
         self.file_menu.addSeparator()
         self.file_menu.addAction(load_cal_action)
         self.load_cal_action = load_cal_action
+
+        load_lioneval_cal_action = QtGui.QAction(
+            QtGui.QIcon(None),
+            "Load LIONEval calibration",
+            self,
+        )
+        load_lioneval_cal_action.setStatusTip("Load old LIONEval calibration file")
+        load_lioneval_cal_action.triggered.connect(self.load_lion_eval_calibration)
+        self.file_menu.addAction(load_lioneval_cal_action)
+        self.load_lioneval_cal_action = load_lioneval_cal_action
 
         save_cal_action = QtGui.QAction(
             QtGui.QIcon(self.appctxt.get_resource("icons/disk-black.png")),
@@ -345,7 +361,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             lambda: self.save_calibration(save_as=True)
         )
         self.file_menu.addAction(save_cal_as_action)
-        self.save_cal_as_action = None
+        self.save_cal_as_action = save_cal_as_action
 
         file_exit_action = QtGui.QAction(
             QtGui.QIcon(self.appctxt.get_resource("icons/application-export.png")),
@@ -371,6 +387,28 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         tool_bar.addSeparator()
         tool_bar.addAction(mass_cal_def_action)
         self.mass_cal_def_action = mass_cal_def_action
+
+        mass_cal_optimize_action = QtGui.QAction(
+            QtGui.QIcon(None),
+            "Optimize mass calibration",
+            self,
+        )
+        mass_cal_optimize_action.setStatusTip(
+            "Optimize the mass calibration by re-fitting all defined peaks."
+        )
+        mass_cal_optimize_action.triggered.connect(self.optimize_mass_calibration)
+        self.mass_cal_menu.addAction(mass_cal_optimize_action)
+        self.mass_cal_optimize_action = mass_cal_optimize_action
+
+        mass_cal_apply_action = QtGui.QAction(
+            QtGui.QIcon(None),
+            "Apply mass calibration",
+            self,
+        )
+        mass_cal_apply_action.setStatusTip("Apply the created mass calibration.")
+        mass_cal_apply_action.triggered.connect(self.apply_mass_calibration)
+        self.mass_cal_menu.addAction(mass_cal_apply_action)
+        self.mass_cal_apply_action = mass_cal_apply_action
 
         mass_cal_show_action = QtGui.QAction(
             QtGui.QIcon(None),
@@ -732,13 +770,13 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
                     rimseval.interfacer.load_cal_file(crd, calfile)
 
             self.file_names_model.set_new_list(file_paths)
-            self.set_controls_from_filters()
 
             if self.config.get("Calculate on open"):
                 self.crd_files.read_files()
                 self.calculate_single()
             else:
                 self.update_info_window(update_all=True)
+                self.update_action_status()
 
     def load_calibration(self, fname: Path = None):
         """Load a specific calibration file.
@@ -756,9 +794,17 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
         rimseval.interfacer.load_cal_file(self.current_crd_file, fname)
 
+        self.set_controls_from_filters()
+
         if self.config.get("Calculate on open"):
-            # todo: calculate on open
-            pass
+            self.calculate_single()
+
+    def load_lion_eval_calibration(self, fname: Path = None):
+        """Load an old LIONEval calibration file.
+
+        :param fname: Name of calaibration file. If none, bring up a dialog to query.
+        """
+        pass
 
     def save_calibration(self, save_as: bool = False):
         """Save Calibration.
@@ -779,6 +825,12 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         rimseval.interfacer.save_cal_file(self.current_crd_file, fname=fname)
 
     # MASS CALIBRATION FUNCTIONS #
+    def apply_mass_calibration(self):
+        """Apply an already defined / imported mass calibration."""
+        if self.current_crd_file is not None:
+            if self.current_crd_file.def_mcal is not None:
+                self.current_crd_file.mass_calibration()
+
     def create_mass_calibration(self):
         """Enable user to create a mass calibration."""
         logy = self.config.get("Plot with log y-axis")
@@ -786,7 +838,12 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         window = rimseval.guis.mcal.CreateMassCalibration(
             self.current_crd_file, logy=logy, theme=theme
         )
+        window.signal_calibration_applied.connect(self.update_all)
         window.show()
+
+    def optimize_mass_calibration(self):
+        """Optimize a given mass calibration by re-fitting all the peaks."""
+        pass
 
     def show_mass_calibration(self):
         """Show the current Mass calibration as a QDialog."""
@@ -803,6 +860,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         window = rimseval.guis.integrals.DefineIntegrals(
             self.current_crd_file, logy=logy, theme=theme
         )
+        window.signal_integrals_defined.connect(self.update_all)
         window.show()
 
     def integrals_set_edit(self):
@@ -811,6 +869,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         dialog = IntegralEditDialog(model, parent=self)
         if dialog.exec():
             self.current_crd_file.def_integrals = model.return_data()
+            self.update_all()
 
     def integrals_fitting(self):
         """Define integrals by fitting them."""
@@ -865,6 +924,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         window = rimseval.guis.integrals.DefineBackgrounds(
             self.current_crd_file, logy=logy, theme=theme
         )
+        window.signal_backgrounds_defined.connect(self.update_all)
         window.show()
 
     def backgrounds_set_edit(self):
@@ -875,6 +935,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         )
         if dialog.exec():
             self.current_crd_file.def_backgrounds = model.return_data()
+            self.update_all()
 
     # CALCULATE FUNCTIONS #
 
@@ -918,6 +979,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.save_calibration()
 
         # update stuff
+        self.update_action_status()
         self.update_info_window(update_all=False)
         self.update_plot_window()
 
@@ -1032,6 +1094,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         if self.config.get("Calculate on open"):
             self.calculate_single()
         else:
+            self.update_action_status()
             self.update_info_window(update_all=True)
             self.update_plot_window()
 
@@ -1151,6 +1214,87 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.current_crd_file.applied_filters = filters
 
         return True  # all worked :)
+
+    def update_all(self):
+        """Update Actions, Info, and Plot."""
+        self.apply_mass_calibration()
+        self.update_plot_window()
+        self.update_action_status()
+
+    def update_action_status(self):
+        """Sets the status of actions based on what the CRD file is capable of."""
+        # turn all off
+        all_actions = [
+            self.load_cal_action,
+            self.load_lioneval_cal_action,
+            self.save_cal_action,
+            self.save_cal_as_action,
+            self.mass_cal_def_action,
+            self.mass_cal_apply_action,
+            self.mass_cal_optimize_action,
+            self.mass_cal_show_action,
+            self.integrals_set_edit_action,
+            self.integrals_draw_action,
+            self.integrals_fitting_action,
+            self.integrals_copy_action,
+            self.integrals_copy_w_names_action,
+            self.integrals_copy_pkg_action,
+            self.integrals_copy_pkg_w_names_action,
+            self.backgrounds_draw_action,
+            self.backgrounds_set_edit_action,
+            self.calculate_single_action,
+            self.calculate_batch_action,
+            self.export_mass_spectrum_action,
+            self.export_tof_spectrum_action,
+            self.special_hist_dt_ions_action,
+            self.special_hist_ions_shot_action,
+        ]
+        for action in all_actions:
+            action.setDisabled(True)
+
+        if self.current_crd_file is None:
+            return
+
+        crd_loaded_actions = [
+            self.load_cal_action,
+            self.load_lioneval_cal_action,
+            self.save_cal_action,
+            self.save_cal_as_action,
+            self.mass_cal_def_action,
+            self.calculate_single_action,
+            self.calculate_batch_action,
+            # todo self.export_tof_spectrum_action,
+            # todo self.special_hist_dt_ions_action,
+            # todo self.special_hist_ions_shot_action,
+        ]
+        if self.current_crd_file is not None:  # so we have a file!
+            for action in crd_loaded_actions:
+                action.setEnabled(True)
+
+        mass_cal_exists_actions = [
+            self.mass_cal_apply_action,
+            self.mass_cal_optimize_action,
+            self.mass_cal_show_action,
+            self.integrals_set_edit_action,
+            self.integrals_draw_action,
+            # todo self.integrals_fitting_action,
+            # todo self.export_mass_spectrum_action,
+        ]
+        if self.current_crd_file.def_mcal is not None:
+            for action in mass_cal_exists_actions:
+                action.setEnabled(True)
+
+        integrals_defined_actions = [
+            self.integrals_copy_action,
+            self.integrals_copy_w_names_action,
+            self.integrals_copy_pkg_action,
+            self.backgrounds_draw_action,
+            self.backgrounds_set_edit_action,
+            self.integrals_copy_pkg_w_names_action,
+        ]
+        if self.current_crd_file.def_integrals is not None:
+            for action in integrals_defined_actions:
+                action.setEnabled(True)
 
     def update_info_window(self, update_all: bool = False) -> None:
         """Update the Info window.
