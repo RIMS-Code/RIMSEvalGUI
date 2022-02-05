@@ -2,3 +2,5 @@ PyQt6
 pyqtdarktheme
 git+https://github.com/RIMS-Code/RIMSEval
 git+https://github.com/trappitsch/pyqtconfig@DialogBox_fixes_for_PyQt6
+matplotlib
+numpy

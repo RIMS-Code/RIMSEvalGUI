@@ -97,6 +97,12 @@ class IntegralsModel(QtCore.QAbstractTableModel):
         """Return the number of rows."""
         return self._data.shape[0]
 
+    def clear_data(self):
+        """Clear data."""
+        self._names = None
+        self._data = np.empty((0, 0))
+        self.layoutChanged.emit()
+
     def get_integrals_to_copy(self, names: bool = False, unc: bool = True) -> str:
         """Get string with the data to copy to clipboard.
 

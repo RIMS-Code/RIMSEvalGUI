@@ -31,8 +31,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         """Initialize the main window."""
         super().__init__()
 
-        # crd related stuff
-        self.crd_files = None
+        # fbs related stuff
+        self.appctxt = appctxt
 
         # local profile
         self.user_folder = Path.home()
@@ -40,13 +40,14 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.init_local_profile()
 
         self.config = None
-
-        # fbs related stuff
-        self.appctxt = appctxt
+        self.init_config_manager()
 
         # window titles and geometry
         self.setWindowTitle(f"RIMS Evaluation v{rimseval.__version__}")
         self.setGeometry(QtCore.QRect(300, 300, 700, 100))
+
+        # crd related stuff
+        self.crd_files = None
 
         # views to access
         self.file_names_view = OpenFilesListView(self)
@@ -138,10 +139,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         # initialize the UI
         self.init_menu_toolbar()
         self.init_main_widget()
-        self.init_config_manager()
 
         self.setStyleSheet(qdarktheme.load_stylesheet(self.config.get("Theme")))
-        self.plot_window.set_theme(self.config.get("Theme"))
 
     def init_local_profile(self):
         """Initialize a user's local profile, platform dependent."""
@@ -363,7 +362,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
         mass_cal_def_action = QtGui.QAction(
             QtGui.QIcon(self.appctxt.get_resource("icons/target.png")),
-            "Create",
+            "Create Mass Calibration",
             self,
         )
         mass_cal_def_action.setStatusTip("Create a mass calibration")
@@ -708,6 +707,9 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             if self.crd_files:
                 self.crd_files.close_files()
 
+            self.integrals_model.clear_data()
+            self.plot_window.clear_plot()
+
             file_paths = [Path(file_name) for file_name in file_names]
 
             # set user path to this folder
@@ -729,18 +731,14 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
                 if calfile:
                     rimseval.interfacer.load_cal_file(crd, calfile)
 
-            if self.config.get("Calculate on open"):
-
-                self.crd_files.read_files()
-
-                # mass calibration
-                for crd in self.crd_files.files:
-                    if crd.def_mcal is not None:
-                        crd.mass_calibration()
-
             self.file_names_model.set_new_list(file_paths)
+            self.set_controls_from_filters()
 
-            self.update_info_window(update_all=True)
+            if self.config.get("Calculate on open"):
+                self.crd_files.read_files()
+                self.calculate_single()
+            else:
+                self.update_info_window(update_all=True)
 
     def load_calibration(self, fname: Path = None):
         """Load a specific calibration file.
@@ -882,12 +880,15 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
     def calculate_single(self):
         """Applies the currently displayed settings to the displayed CRD file."""
+        crd = self.current_crd_file
+
+        # if file has never been read, run a full spectrum
+        if crd.tof is None:
+            crd.spectrum_full()
+
         # run mass calibration if necessary
-        if (
-            self.current_crd_file.def_mcal is not None
-            and self.current_crd_file.mass is None
-        ):
-            self.current_crd_file.mass_calibration()
+        if crd.def_mcal is not None and crd.mass is None:
+            crd.mass_calibration()
 
         # calculate file
         if not self.set_filters_from_controls():
@@ -918,6 +919,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
         # update stuff
         self.update_info_window(update_all=False)
+        self.update_plot_window()
 
     def calculate_batch(self):
         """Applies the currently configured settings to all open CRD files."""
@@ -1009,7 +1011,6 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.config.save()
 
         self.setStyleSheet(qdarktheme.load_stylesheet(self.config.get("Theme")))
-        self.plot_window.set_theme(self.config.get("Theme"))
 
     def window_settings(self):
         """Settings Dialog."""
@@ -1026,21 +1027,13 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         """Reacts to a different file that is currently selected."""
         self.file_names_model.update_current(ind.row())
 
-        # update windows
-        self.update_info_window(update_all=True)
-
-        # update controls
         self.set_controls_from_filters()
 
-    def update_info_window(self, update_all: bool = False) -> None:
-        """Update the Info window.
-
-        :param update_all: If True, header information is updated as well.
-        """
-        crd_file = self.current_crd_file
-        self.info_window.update_current(crd_file)
-        if update_all:
-            self.info_window.update_header(crd_file)
+        if self.config.get("Calculate on open"):
+            self.calculate_single()
+        else:
+            self.update_info_window(update_all=True)
+            self.update_plot_window()
 
     def set_controls_from_filters(self):
         """Set the UI controls from the current CRD filters."""
@@ -1049,8 +1042,10 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         key = "spectrum_part"
         if key in filters:
             self.control_spectrum_part[0].setChecked(filters[key][0])
-            txt = ", ".join(list(itertools.chain(*filter[key][1])))
-            self.control_spectrum_part[1].setText(txt)
+            if filters[key][0]:
+                flat_list = list(itertools.chain(*filters[key][1]))
+                txt = ", ".join(map(str, flat_list))
+                self.control_spectrum_part[1].setText(txt)
 
         key = "max_ions_per_shot"
         if key in filters:
@@ -1103,7 +1098,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
                 return False
             try:
                 vals_list = (
-                    np.array(vals, dtype=int).reshape((len(vals) // 2, 2)).to_list()
+                    np.array(vals, dtype=int).reshape((len(vals) // 2, 2)).tolist()
                 )
             except Exception as err:
                 QtWidgets.QMessageBox.warning(
@@ -1156,6 +1151,20 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.current_crd_file.applied_filters = filters
 
         return True  # all worked :)
+
+    def update_info_window(self, update_all: bool = False) -> None:
+        """Update the Info window.
+
+        :param update_all: If True, header information is updated as well.
+        """
+        crd_file = self.current_crd_file
+        self.info_window.update_current(crd_file)
+        if update_all:
+            self.info_window.update_header(crd_file)
+
+    def update_plot_window(self) -> None:
+        """Update the plot window."""
+        self.plot_window.plot_single(self.current_crd_file)
 
 
 if __name__ == "__main__":
