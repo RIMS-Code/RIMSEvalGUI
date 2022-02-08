@@ -689,6 +689,14 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         tool_bar.addSeparator()
         tool_bar.addAction(settings_action)
 
+        about_action = QtGui.QAction(
+            QtGui.QIcon(self.appctxt.get_resource("icons/question.png")),
+            "About",
+            self,
+        )
+        about_action.triggered.connect(self.about_dialog)
+        self.settings_menu.addAction(about_action)
+
         # exit button
         tool_bar.addSeparator()
         tool_bar.addAction(file_exit_action)
@@ -1101,6 +1109,23 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             lambda: self.update_settings(config_dialog.config)
         )
         config_dialog.exec()
+
+    def about_dialog(self):
+        """Open an about dialog."""
+        QtWidgets.QMessageBox.information(
+            self,
+            "About",
+            "This GUI wraps around the Python rimseval package. "
+            "Some documentation on the package and the GUI can "
+            "be found "
+            "<a href='https://rimseval.readthedocs.io/en/latest/'>here</a>.<br><br>"
+            "Issues should be raised on GitHub in the "
+            "<a href='https://github.com/RIMS-Code/RIMSEval'>rimseval repo</a> "
+            "or in the "
+            "<a href='https://github.com/RIMS-Code/RIMSEvalGUI'>GUI repo</a>. "
+            "If unsure, just post your problem to one of the repos.<br><br>"
+            "Reto Trappitsch, 2022",
+        )
 
     # ACTIONS ON CHANGED MODEL VIEWS #
 
