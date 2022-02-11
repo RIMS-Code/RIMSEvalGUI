@@ -1,10 +1,14 @@
 """PyQt Main window to display mass spectrometer."""
 
+from weakref import ref
+
 import matplotlib
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+import numpy as np
 from PyQt6 import QtCore, QtGui, QtWidgets
 import rimseval
+from rimseval.guis.integrals import tableau_color
 from rimseval.guis.mpl_canvas import MyMplNavigationToolbar
 
 
@@ -23,6 +27,27 @@ class PlotWindow(QtWidgets.QMainWindow):
             matplotlib.style.use("dark_background")
 
         self.logy = parent.config.get("Plot with log y-axis")
+
+        # buttons
+        self.button_spectrum_type = QtWidgets.QPushButton("Mass")
+        self.button_integrals = QtWidgets.QPushButton("Integrals")
+        self.button_backgrounds = QtWidgets.QPushButton("Backgrounds")
+
+        # settings for the program
+        self._plot_ms = True  # plot mass spectrum when mass available\
+        self._plot_integrals = True
+        self._plot_backgrounds = True
+
+        # shading references
+        self._peak_shades_ref = None
+        self._background_shades_ref = None
+
+        # empty data
+        self.mass = None
+        self.tof = None
+        self.data = None
+        self.integrals = None
+        self.backgrounds = None
 
         self.fig = Figure(figsize=(9, 6), dpi=100)
         self.sc = FigureCanvas(self.fig)
@@ -67,6 +92,21 @@ class PlotWindow(QtWidgets.QMainWindow):
         self.button_bar.addWidget(ax_autoscale_button)
         self.ax_autoscale_button = ax_autoscale_button
 
+        self.button_spectrum_type.setCheckable(True)
+        self.button_spectrum_type.setChecked(self._plot_ms)
+        self.button_spectrum_type.clicked.connect(self.toggle_spectrum_type)
+        self.button_bar.addWidget(self.button_spectrum_type)
+
+        self.button_integrals.setCheckable(True)
+        self.button_integrals.setChecked(self._plot_integrals)
+        self.button_integrals.clicked.connect(self.toggle_integrals)
+        self.button_bar.addWidget(self.button_integrals)
+
+        self.button_backgrounds.setCheckable(True)
+        self.button_backgrounds.setChecked(self._plot_backgrounds)
+        self.button_backgrounds.clicked.connect(self.toggle_backgrounds)
+        self.button_bar.addWidget(self.button_backgrounds)
+
         close_button = QtWidgets.QPushButton("Close")
         close_button.setToolTip("Hide this window from view")
         close_button.clicked.connect(self.close)
@@ -77,6 +117,8 @@ class PlotWindow(QtWidgets.QMainWindow):
         """Close event also untoggles the respective button in parent class."""
         self.parent.window_plot_action.setChecked(False)
         super().closeEvent(a0)
+
+    # MY METHODS #
 
     def clear_plot(self):
         """Clear figure."""
@@ -97,16 +139,16 @@ class PlotWindow(QtWidgets.QMainWindow):
 
         self.sc.draw()
 
-    def plot_single(self, crd: rimseval.CRDFileProcessor) -> None:
+    def plot_single(self) -> None:
         """Plot the data of a single CRD file ont he canvas.
 
         :param crd: CRD File to plot from
         """
-        if crd.mass is None:
-            xax = crd.tof
+        if self.mass is None or not self._plot_ms:
+            xax = self.tof
             xlabel = "Time of Flight (us)"
-        elif crd.tof is not None:
-            xax = crd.mass
+        elif self.tof is not None:
+            xax = self.mass
             xlabel = "Mass (amu)"
         else:
             return
@@ -118,7 +160,7 @@ class PlotWindow(QtWidgets.QMainWindow):
 
         color = "w" if self.theme == "dark" else "k"
 
-        self.axes.fill_between(xax, crd.data, color=color, linewidth=0.3)
+        self.axes.fill_between(xax, self.data, color=color, linewidth=0.3)
         self.axes.set_xlabel(xlabel)
         self.axes.set_ylabel("Counts")
         if self.logy:
@@ -131,3 +173,74 @@ class PlotWindow(QtWidgets.QMainWindow):
             self.axes.set_ylim(ylim)
 
         self.sc.draw()
+
+        if self._plot_ms:  # only when in mass spectrum mode
+            if self._plot_integrals:
+                self.shade_peaks()
+            if self._plot_backgrounds:
+                self.shade_backgrounds()
+
+    def shade_backgrounds(self):
+        """Go through background list and shade them."""
+        if self.backgrounds is not None and self.integrals is not None:
+            for it, peak_pos in enumerate(self.backgrounds[1]):
+                int_name_index = self.integrals[0].index(self.backgrounds[0][it])
+                col = tableau_color(int_name_index)
+
+                self.axes.axvspan(
+                    peak_pos[0], peak_pos[1], linewidth=0, color=col, alpha=0.25
+                )
+
+            self.sc.draw()
+
+    def shade_peaks(self):
+        """Shade the peaks with given integrals."""
+        if self.integrals is not None:
+            xax_lims = self.axes.get_xlim()
+            yax_lims = self.axes.get_ylim()
+
+            # shade peaks
+            for it, peak_pos in enumerate(self.integrals[1]):
+                indexes = np.where(
+                    np.logical_and(self.mass > peak_pos[0], self.mass < peak_pos[1])
+                )
+
+                self.axes.fill_between(
+                    self.mass[indexes],
+                    self.data[indexes],
+                    color=tableau_color(it),
+                    linewidth=0.3,
+                )
+
+            self.axes.set_xlim(xax_lims)
+            self.axes.set_ylim(yax_lims)
+
+            self.sc.draw()
+
+    def toggle_integrals(self) -> None:
+        """Toggle if integrals are being plotted."""
+        self._plot_integrals = not self._plot_integrals
+        self.button_integrals.setChecked(self._plot_integrals)
+        self.plot_single()
+
+    def toggle_backgrounds(self) -> None:
+        """Toggle if backgrounds are being plotted."""
+        self._plot_backgrounds = not self._plot_backgrounds
+        self.button_backgrounds.setChecked(self._plot_backgrounds)
+        self.plot_single()
+
+    def toggle_spectrum_type(self) -> None:
+        """Toggle the spectrum type that is being plotted."""
+        self._plot_ms = not self._plot_ms
+        self.button_spectrum_type.setChecked(self._plot_ms)
+        self.plot_single()
+
+    def update_data(self, crd: rimseval.CRDFileProcessor) -> None:
+        """Update the data required for plotting."""
+        self.mass = crd.mass
+        self.tof = crd.tof
+        self.data = crd.data
+        self.integrals = crd.def_integrals
+        self.backgrounds = crd.def_backgrounds
+        # plot the single spectrum
+        self.plot_single()

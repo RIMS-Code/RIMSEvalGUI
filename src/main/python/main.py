@@ -1371,7 +1371,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
     def update_plot_window(self) -> None:
         """Update the plot window."""
-        self.plot_window.plot_single(self.current_crd_file)
+        self.plot_window.update_data(self.current_crd_file)
 
 
 if __name__ == "__main__":
