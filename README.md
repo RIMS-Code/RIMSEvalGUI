@@ -1,12 +1,10 @@
 # RIMSEvalGUI
 
-This is the repository for the GUI.
+This is the repository for the GUI around the `rimseval` software.
+Documentation here is only minimal!
+For more detailed `rimseval` documentation, 
+see [here](https://rimseval.readthedocs.io/en/latest/).
 
-If you want to manually install the requirements,
-please check out the [`rimseval` repo](https://github.com/RIMS-Code/RIMSEval).
-This project uses `PyQt6`.
-
-ToDo: Run the GUI w/o having `fbs` installed.
 
 ## Run the program within your python environment
 
