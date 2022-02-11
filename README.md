@@ -1,27 +1,48 @@
 # RIMSEvalGUI
 
-This is the development branch for the GUI.
-It uses [`fbs`](https://build-system.fman.io) for packaging
-and you need an `fbs pro` license in order to package it.
-All requirements are then handled by `fbs`.
+This is the repository for the GUI.
+
 If you want to manually install the requirements,
 please check out the [`rimseval` repo](https://github.com/RIMS-Code/RIMSEval).
 This project uses `PyQt6`.
 
 ToDo: Run the GUI w/o having `fbs` installed.
 
-## Requirements
+## Run the program within your python environment
 
-Packaging requirements are in the respective `fbs` folder.
-For installation of a virtual environments, 
-install the requirements from `requirements.txt`, e.g.:
+Supported python versions are 3.8 and 3.9.
+Running the program should work under Anaconda,
+as long as you ensure that you use python 3.8 or python 3.9.
+
+It is **highly** recommended to setup a virtual environment 
+since the requirements are highly specific.
+Please follow your python instructions on how to create one.
+
+To install the requirements for the package in your virtual environment,
+you can use `pip` and the given `requirements.txt` file as following:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-The `fbs` package is not listed in that file,
-since you need to use the pro edition for packaging
+Then you can simply run the `RIMSEvalGUI.py` file in the main directory,
+e.g., from a terminal by typing:
+
+```bash
+python RIMSEvalGUI.py
+```
+
+## Run from executable
+
+TBD
+
+## Packaging
+
+To package the program, we use [`fbs`](https://build-system.fman.io) 
+and you need an `fbs pro` license in order to package it.
+All requirements are then handled by `fbs`.
+
+Instructions TBD
 
 ## Attribution
 

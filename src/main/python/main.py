@@ -4,8 +4,13 @@ import itertools
 from pathlib import Path
 import sys
 
-from fbs_runtime.application_context.PyQt6 import ApplicationContext
-import fbs_runtime.platform as fbsrt_platform
+try:
+    from fbs_runtime.application_context.PyQt6 import ApplicationContext
+    import fbs_runtime.platform as fbsrt_platform
+except ImportError:
+    ApplicationContext = None
+    fbsrt_platform = None
+
 import numpy as np
 from PyQt6 import QtCore, QtGui, QtWidgets
 from pyqtconfig import ConfigDialog, ConfigManager
@@ -27,12 +32,17 @@ from plot_window import PlotWindow
 class MainRimsEvalGui(QtWidgets.QMainWindow):
     """Main GUI for the RIMSEval program."""
 
-    def __init__(self, appctxt):
-        """Initialize the main window."""
+    def __init__(self, appctxt, is_windows: bool = False):
+        """Initialize the main window.
+
+        :param appctxt: Application context, fbs or none fbs.
+        :param is_windows: Are we on Windows?
+        """
         super().__init__()
 
         # fbs related stuff
         self.appctxt = appctxt
+        self.is_windows = is_windows
 
         # local profile
         self.user_folder = Path.home()
@@ -150,7 +160,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
     def init_local_profile(self):
         """Initialize a user's local profile, platform dependent."""
-        if fbsrt_platform.is_windows():
+        if self.is_windows:
             app_local_path = Path.home().joinpath("AppData/Roaming/RIMSEval/")
         else:
             app_local_path = Path.home().joinpath(".config/RIMSEval/")
@@ -1375,8 +1385,9 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
 
 if __name__ == "__main__":
-    appctxt = ApplicationContext()  # 1. Instantiate ApplicationContext
-    window = MainRimsEvalGui(appctxt)
-    window.show()
-    exit_code = appctxt.app.exec()  # 2. Invoke appctxt.app.exec()
-    sys.exit(exit_code)
+    if ApplicationContext is not None:
+        appctxt = ApplicationContext()  # 1. Instantiate ApplicationContext
+        window = MainRimsEvalGui(appctxt, is_windows=fbsrt_platform.is_windows())
+        window.show()
+        exit_code = appctxt.app.exec()  # 2. Invoke appctxt.app.exec()
+        sys.exit(exit_code)
