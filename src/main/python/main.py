@@ -586,6 +586,17 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         tool_bar.addSeparator()
         tool_bar.addAction(lst_convert_action)
 
+        lst_convert_tagged_action = QtGui.QAction(
+            QtGui.QIcon(None),
+            "Convert Tagged LST to CRD",
+            self,
+        )
+        lst_convert_tagged_action.setStatusTip("Convert Tagged LST to CRD file(s)")
+        lst_convert_tagged_action.triggered.connect(
+            lambda: self.convert_lst_to_crd(True)
+        )
+        self.lst_menu.addAction(lst_convert_tagged_action)
+
         # EXPORT ACTIONS #
         export_mass_spectrum_action = QtGui.QAction(
             QtGui.QIcon(),
@@ -795,8 +806,9 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
                     self.optimize_mass_calibration()
                 self.calculate_single()
             else:
-                self.update_info_window(update_all=True)
                 self.update_action_status()
+
+            self.update_info_window(update_all=True)
 
     def load_calibration(self, fname: Path = None):
         """Load a specific calibration file.

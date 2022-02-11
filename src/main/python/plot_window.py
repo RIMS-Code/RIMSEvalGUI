@@ -1,7 +1,5 @@
 """PyQt Main window to display mass spectrometer."""
 
-from weakref import ref
-
 import matplotlib
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
@@ -21,6 +19,8 @@ class PlotWindow(QtWidgets.QMainWindow):
 
         self.parent = parent
         self.setWindowTitle("Spectrum")
+        # self.setGeometry(QtCore.QRect(1000, 1000, 100, 100))
+        self.move(1550, 200)
 
         self.theme = parent.config.get("Theme")
         if self.theme == "dark":
