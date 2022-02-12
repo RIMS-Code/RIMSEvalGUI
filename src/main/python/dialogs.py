@@ -183,6 +183,8 @@ class IntegralEditDialog(QtWidgets.QDialog):
         self.lower_limit_autofill = QtWidgets.QDoubleSpinBox()
         self.upper_limit_autofill = QtWidgets.QDoubleSpinBox()
         self.table_edit = IntegralBackgroundTableView()
+        self.element_entry = QtWidgets.QLineEdit()
+        self.mass_offset = QtWidgets.QDoubleSpinBox()
         self.model = model
         self.table_edit.setModel(self.model)
 
@@ -209,6 +211,22 @@ class IntegralEditDialog(QtWidgets.QDialog):
 
         layout.addLayout(auto_layout)
 
+        element_layout = QtWidgets.QHBoxLayout()
+        self.element_entry.setToolTip(
+            "Enter an element name to add within\nselect range and mass offset"
+        )
+        self.mass_offset.setRange(-99, 99)
+        self.mass_offset.setDecimals(5)
+        self.mass_offset.setSingleStep(0.1)
+        self.mass_offset.setValue(0)
+        self.mass_offset.setToolTip("Mass offset (amu)")
+        element_button = QtWidgets.QPushButton("Add All Isotopes")
+        element_button.clicked.connect(self.add_element)
+        element_layout.addWidget(self.element_entry)
+        element_layout.addWidget(self.mass_offset)
+        element_layout.addWidget(element_button)
+        layout.addLayout(element_layout)
+
         layout.addWidget(self.table_edit)
 
         clear_all_button = QtWidgets.QPushButton("Clear All")
@@ -230,6 +248,35 @@ class IntegralEditDialog(QtWidgets.QDialog):
 
         layout.addWidget(button_box)
         self.setLayout(layout)
+
+    def add_element(self):
+        """Adds all isotopes of an element with set range and mass offset."""
+        element = self.element_entry.text()
+        try:
+            isos = ini.iso[element]
+        except IndexError:
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Invalid element",
+                f"Cannot find isotopes for element {element}.",
+            )
+            return None
+
+        names = isos.name
+        masses = isos.mass
+
+        lower_limit = float(self.lower_limit_autofill.value())
+        upper_limit = float(self.upper_limit_autofill.value())
+        offset = float(self.mass_offset.value())
+
+        masses += offset
+
+        values = np.zeros((len(names), 2))
+        for it, mass in enumerate(masses):
+            values[it][0] = masses[it] - lower_limit
+            values[it][1] = masses[it] + upper_limit
+
+        self.model.add_element(names, values)
 
     def add_row(self):
         """Add a row to the data."""

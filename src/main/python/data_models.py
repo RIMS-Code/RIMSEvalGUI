@@ -137,7 +137,7 @@ class IntegralsModel(QtCore.QAbstractTableModel):
 
 
 class IntegralBackgroundDefinitionModel(QtCore.QAbstractTableModel):
-    """Abstract table model for the integral definitions."""
+    """Abstract table model for the integral and backgruond definitions."""
 
     def __init__(self, data=None):
         """Initialize integrals definition model.
@@ -217,6 +217,18 @@ class IntegralBackgroundDefinitionModel(QtCore.QAbstractTableModel):
         """Add a row to the integral data."""
         self._names.append("")
         self._values = np.append(self._values, np.zeros((1, 2)), axis=0)
+        self.layoutChanged.emit()
+
+    def add_element(self, names, values):
+        """Add isotopes with given values, overwrite doubles."""
+        for it, name in enumerate(names):
+            if name not in self._names:
+                self._names.append(name)
+                self._values = np.append(self._values, values[it].reshape(1, 2), axis=0)
+            else:
+                index = self._names.index(name)
+                self._values[index] = values[it]
+        self.remove_empties()
         self.layoutChanged.emit()
 
     def auto_fill(self, masses: List[float], lower: float, upper: float):
