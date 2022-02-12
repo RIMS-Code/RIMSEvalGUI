@@ -10,6 +10,89 @@ from data_models import IntegralBackgroundDefinitionModel
 from data_views import IntegralBackgroundTableView
 
 
+class AboutDialog(QtWidgets.QDialog):
+    """Present an about dialog."""
+
+    def __init__(self, parent=None):
+        """Initialize the dialog.
+
+        :param parent: Parent widget.
+        """
+        super().__init__(parent)
+
+        self.setWindowTitle("About RIMSEval")
+        self.version = parent.version
+        self.theme = parent.config.get("Theme")
+        self.about_text()
+
+    def about_text(self):
+        """Set the about text for the dialog."""
+        layout = QtWidgets.QVBoxLayout()
+
+        font_bold = QtGui.QFont()
+        font_bold.setBold(True)
+
+        title = QtWidgets.QLabel(f"RIMSEval {self.version}")
+        title.setFont(font_bold)
+        layout.addWidget(title)
+
+        docs = QtWidgets.QLabel(
+            f"Documentation can be found at:<br>"
+            f"{self.html_url('https://rimseval.readthedocs.io')}"
+        )
+        docs.setOpenExternalLinks(True)
+        layout.addWidget(docs)
+
+        repo1 = QtWidgets.QLabel(
+            f"GitHub repository for <code>rimseval</code> package<br>"
+            f"{self.html_url('https://github.com/RIMS-Code/RIMSEval')}"
+        )
+        repo1.setOpenExternalLinks(True)
+        layout.addWidget(repo1)
+
+        repo2 = QtWidgets.QLabel(
+            f"GitHub repository for the GUI<br>"
+            f"{self.html_url('https://github.com/RIMS-Code/RIMSEvalGUI')}"
+        )
+        repo2.setOpenExternalLinks(True)
+        layout.addWidget(repo2)
+
+        issues = QtWidgets.QLabel(
+            "If you encounter problems with this package, please<br>"
+            "open a new issue on GitHub with a detailed description.<br>"
+            "You can also include problematic files in your issue.<br>"
+            "Issues can be posted in either repository."
+        )
+        layout.addWidget(issues)
+
+        author = QtWidgets.QLabel("Reto Trappitsch, 2022")
+        layout.addWidget(author)
+
+        button_box = QtWidgets.QDialogButtonBox(
+            QtWidgets.QDialogButtonBox.StandardButton.Ok
+        )
+        button_box.accepted.connect(self.accept)
+        layout.addWidget(button_box)
+
+        self.setLayout(layout)
+
+    def html_url(self, url: str, name: str = None) -> str:
+        """Create a HTML string for the URL and return it.
+
+        :param url: URL to set
+        :param name: Name of the URL, if None, use same as URL.
+        """
+        if self.theme == "dark":
+            color = "#988fd4"
+        else:
+            color = "#1501a3"
+
+        if name is None:
+            name = url
+        retval = f'<a href="{url}" style="color:{color}">{name}</a>'
+        return retval
+
+
 class BackgroundEditDialog(QtWidgets.QDialog):
     """Set / Edit backgrounds dialog."""
 

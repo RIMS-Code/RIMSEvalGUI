@@ -23,7 +23,7 @@ from data_models import (
     OpenFilesModel,
 )
 from data_views import IntegralsDisplay, OpenFilesListView
-from dialogs import BackgroundEditDialog, IntegralEditDialog, MassCalDialog
+from dialogs import AboutDialog, BackgroundEditDialog, IntegralEditDialog, MassCalDialog
 from elements import PeriodicTable
 from info_window import FileInfoWindow
 from plot_window import PlotWindow
@@ -53,7 +53,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.init_config_manager()
 
         # window titles and geometry
-        self.setWindowTitle(f"RIMS Evaluation v{rimseval.__version__}")
+        self.version = f"v{rimseval.__version__}"
+        self.setWindowTitle(f"RIMS Evaluation {self.version}")
         self.setGeometry(QtCore.QRect(300, 300, 700, 100))
 
         # crd related stuff
@@ -1134,20 +1135,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
     def about_dialog(self):
         """Open an about dialog."""
-        QtWidgets.QMessageBox.information(
-            self,
-            "About",
-            "This GUI wraps around the Python rimseval package. "
-            "Some documentation on the package and the GUI can "
-            "be found "
-            "<a href='https://rimseval.readthedocs.io/en/latest/'>here</a>.<br><br>"
-            "Issues should be raised on GitHub in the "
-            "<a href='https://github.com/RIMS-Code/RIMSEval'>rimseval repo</a> "
-            "or in the "
-            "<a href='https://github.com/RIMS-Code/RIMSEvalGUI'>GUI repo</a>. "
-            "If unsure, just post your problem to one of the repos.<br><br>"
-            "Reto Trappitsch, 2022",
-        )
+        dialog = AboutDialog(self)
+        dialog.exec()
 
     # ACTIONS ON CHANGED MODEL VIEWS #
 
