@@ -1035,10 +1035,10 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
     def calculate_batch(self):
         """Applies the currently configured settings to all open CRD files."""
-        # get the currently selected files
-        # selected_models = self.file_names_view.selectedIndexes()
-        # selected_indexes = [it.row() for it in selected_models]
-        # print(selected_indexes)
+        main_id = self.file_names_model.currently_active
+        opt_mcal = self.config.get("Optimize Mass Calibration")
+        bg_corr = self.control_bg_correction.isChecked()
+        self.crd_files.apply_to_all(main_id, opt_mcal=opt_mcal, bg_corr=bg_corr)
 
     # LST FILE FUNCTIONS #
 
@@ -1143,6 +1143,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
     def current_file_changed(self, ind: QtCore.QModelIndex) -> None:
         """Reacts to a different file that is currently selected."""
         self.file_names_model.update_current(ind.row())
+        self.integrals_model.clear_data()
 
         self.set_controls_from_filters()
 
