@@ -14,7 +14,7 @@ class FileInfoWindow(QtWidgets.QMainWindow):
 
         self.parent = parent
 
-        self.setGeometry(QtCore.QRect(0, 150, 300, 200))
+        self.setGeometry(QtCore.QRect(0, 50, 300, 200))
         self.main_widget = QtWidgets.QWidget()
         self.setCentralWidget(self.main_widget)
 

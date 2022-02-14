@@ -55,7 +55,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         # window titles and geometry
         self.version = f"v{rimseval.__version__}"
         self.setWindowTitle(f"RIMS Evaluation {self.version}")
-        self.setGeometry(QtCore.QRect(300, 300, 700, 100))
+        self.setGeometry(QtCore.QRect(310, 100, 700, 100))
 
         # crd related stuff
         self.crd_files = None

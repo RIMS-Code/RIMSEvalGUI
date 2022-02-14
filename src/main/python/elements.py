@@ -28,7 +28,7 @@ class PeriodicTable(QMainWindow):
         super().__init__(parent)
 
         self.setWindowTitle("Periodic Table of Elements")
-        self.setGeometry(QtCore.QRect(1000, 0, 100, 100))
+        self.setGeometry(QtCore.QRect(1000, 50, 100, 100))
         self.parent = parent
 
         main_widget = QWidget()
