@@ -32,15 +32,40 @@ python RIMSEvalGUI.py
 
 ## Run from executable
 
-TBD
+Download the latest release for your OS
+from [GitHub](https://github.com/RIMS-Code/RIMSEvalGUI/releases).
+Install and run.
 
 ## Packaging
 
 To package the program, we use [`fbs`](https://build-system.fman.io) 
 and you need an `fbs pro` license in order to package it.
-All requirements are then handled by `fbs`.
+Start a new virtual environment, enter the code folder, 
+and install the requirements and fbs via:
 
-Instructions TBD
+```
+pip install -r requirements.txt
+pip install $FBS_DOWNLOAD_LINK
+```
+
+Here, `$FBS_DOWNLOAD_LINK` stands for the download link
+that you received when purchasing fbs pro.
+After all installations are complete and `fbs run` works, 
+you can freeze and create an installer of the package via:
+
+```
+fbs freeze
+fbs installer
+```
+
+*Note*: If you are on Windows,
+further installations are necessary. 
+If freezing fails, the error message
+will provide you a link on where to download the Windows developer SDK.
+If creating the installer fails,
+you are likely missing [NSIS](https://nsis.sourceforge.io/Main_Page).
+Install it and add its main folder to the system's `PATH` environment.
+
 
 ## Attribution
 
