@@ -2,6 +2,7 @@
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 
+import numpy as np
 from rimseval import CRDFileProcessor
 
 
@@ -21,6 +22,8 @@ class FileInfoWindow(QtWidgets.QMainWindow):
         # labels to set dynamically
         self.nof_shots_used = QtWidgets.QLabel("")
         self.nof_packages = QtWidgets.QLabel("")
+        self.nof_ions_used = QtWidgets.QLabel("")
+        self.nof_ions_total = QtWidgets.QLabel("")
         self.hdr_file_id = QtWidgets.QLabel("")
         self.hdr_timestamp = QtWidgets.QLabel("")
         self.hdr_crd_version = QtWidgets.QLabel("")
@@ -42,6 +45,8 @@ class FileInfoWindow(QtWidgets.QMainWindow):
         self.all_editable_labels = (
             self.nof_shots_used,
             self.nof_packages,
+            self.nof_ions_used,
+            self.nof_ions_total,
             self.hdr_file_id,
             self.hdr_timestamp,
             self.hdr_crd_version,
@@ -96,6 +101,9 @@ class FileInfoWindow(QtWidgets.QMainWindow):
 
         layout_current = QtWidgets.QVBoxLayout()
         add_two_to_layout(layout_current, "Shots used:", self.nof_shots_used)
+        add_two_to_layout(layout_current, "Shots total:", self.hdr_nof_shots)
+        add_two_to_layout(layout_current, "Ions in spectrum:", self.nof_ions_used)
+        add_two_to_layout(layout_current, "Ions total:", self.nof_ions_total)
         add_two_to_layout(layout_current, "Number of packages:", self.nof_packages)
         layout.addLayout(layout_current)
 
@@ -139,13 +147,16 @@ class FileInfoWindow(QtWidgets.QMainWindow):
     def update_current(self, crd: CRDFileProcessor) -> None:
         """Update current shot and package settings."""
         self.nof_shots_used.setText(str(crd.nof_shots))
+        self.nof_ions_used.setText(str(int(np.sum(crd.data))))
         nof_packages = (
             len(crd.nof_shots_pkg) if crd.nof_shots_pkg is not None else "N/A"
         )
         self.nof_packages.setText(str(nof_packages))
 
     def update_header(self, crd: CRDFileProcessor) -> None:
-        """Update header values."""
+        """Update header values and number of ions total."""
+        self.nof_ions_total.setText(str(len(crd.crd.all_tofs)))
+
         header = crd.crd.header
 
         def add_header_info(entry: str, label: QtWidgets.QLabel) -> None:

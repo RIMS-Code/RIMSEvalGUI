@@ -66,6 +66,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             tick=self.appctxt.get_resource("icons/tick.png")
         )  # empty model
         self.integrals_model = IntegralsModel()
+        self.user_macro = None  # file path to user macro, if loaded
 
         # menu bar
         menu_bar = self.menuBar()
@@ -126,6 +127,11 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.control_dead_time_correction = [
             QtWidgets.QCheckBox(),
             QtWidgets.QSpinBox(),
+        ]
+        self.control_macro = [
+            QtWidgets.QCheckBox(),
+            QtWidgets.QPushButton(),
+            QtWidgets.QLabel(),
         ]
         self.control_bg_correction = QtWidgets.QCheckBox()
 
@@ -269,6 +275,21 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         control_layout.addLayout(tmphbox)
 
         tmphbox = QtWidgets.QHBoxLayout()
+        self.control_macro[0].setText("Run Macro")
+        self.control_macro[0].setToolTip(
+            "Runs your own macro after all other active filters and\n"
+            "right before dead time correction (if active)."
+        )
+        tmphbox.addWidget(self.control_macro[0])
+        self.control_macro[1].setText("Load")
+        self.control_macro[1].setToolTip("Load your python macro.")
+        self.control_macro[1].clicked.connect(self.load_macro)
+        tmphbox.addWidget(self.control_macro[1])
+        tmphbox.addStretch()
+        tmphbox.addWidget(self.control_macro[2])
+        control_layout.addLayout(tmphbox)
+
+        tmphbox = QtWidgets.QHBoxLayout()
         self.control_dead_time_correction[0].setText("Dead time correction")
         self.control_dead_time_correction[0].setToolTip(
             "Correct spectrum for dead time effects"
@@ -345,7 +366,9 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self,
         )
         load_lioneval_cal_action.setStatusTip("Load old LIONEval calibration file")
-        load_lioneval_cal_action.triggered.connect(self.load_lion_eval_calibration)
+        load_lioneval_cal_action.triggered.connect(
+            lambda: self.load_lion_eval_calibration(fname=None)
+        )
         self.file_menu.addAction(load_lioneval_cal_action)
         self.load_lioneval_cal_action = load_lioneval_cal_action
 
@@ -373,6 +396,12 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         )
         self.file_menu.addAction(save_cal_as_action)
         self.save_cal_as_action = save_cal_as_action
+
+        unload_macro_action = QtGui.QAction(QtGui.QIcon(None), "Unload Macro", self)
+        unload_macro_action.setStatusTip("Unload a set macro and deactivate function.")
+        unload_macro_action.triggered.connect(self.unload_macro)
+        self.file_menu.addSeparator()
+        self.file_menu.addAction(unload_macro_action)
 
         file_exit_action = QtGui.QAction(
             QtGui.QIcon(self.appctxt.get_resource("icons/application-export.png")),
@@ -463,7 +492,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         integrals_fitting_action.triggered.connect(self.integrals_fitting)
         self.integrals_menu.addAction(integrals_fitting_action)
         self.integrals_fitting_action = integrals_fitting_action
-        # todo
+        # todo second version
         integrals_fitting_action.setDisabled(True)
 
         integrals_copy_action = QtGui.QAction(
@@ -634,7 +663,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         special_hist_ions_shot_action.triggered.connect(self.histogram_ions_per_shot)
         self.special_menu.addAction(special_hist_ions_shot_action)
         self.special_hist_ions_shot_action = special_hist_ions_shot_action
-        # todo
+        # todo second version
         self.special_hist_ions_shot_action.setDisabled(True)
 
         special_hist_dt_ions_action = QtGui.QAction(
@@ -648,7 +677,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         special_hist_dt_ions_action.triggered.connect(self.histogram_ions_per_shot)
         self.special_menu.addAction(special_hist_dt_ions_action)
         self.special_hist_dt_ions_action = special_hist_dt_ions_action
-        # todo
+        # todo second version
         self.special_hist_dt_ions_action.setDisabled(True)
 
         # VIEW ACIONS #
@@ -782,6 +811,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
             self.crd_files = rimseval.MultiFileProcessor(file_paths)
             self.crd_files.open_files()  # open, but no read
+            self.crd_files.peak_fwhm = self.config.get("Peak FWHM (us)")
 
             # apply specifications if here:
             for crd in self.crd_files.files:
@@ -820,6 +850,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
                 str(self.user_folder.absolute()),
                 "JSON Files (*.json)",
             )[0]
+            if query == "":
+                return
             fname = Path(query)
 
         rimseval.interfacer.load_cal_file(self.current_crd_file, fname)
@@ -834,13 +866,30 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
         :param fname: Name of calaibration file. If none, bring up a dialog to query.
         """
-        pass
+        if fname is None:
+            query = QtWidgets.QFileDialog.getOpenFileName(
+                self,
+                "Open LIONEval Calibration File",
+                str(self.user_folder.absolute()),
+                "Cal Files (*.cal)",
+            )[0]
+            if query == "":
+                return
+            fname = Path(query)
+
+        rimseval.interfacer.read_lion_eval_calfile(self.current_crd_file, fname)
+
+        self.set_controls_from_filters()
+
+        if self.config.get("Calculate on open"):
+            self.calculate_single()
 
     def save_calibration(self, save_as: bool = False):
         """Save Calibration.
 
         :param save_as: If True, brings up a dialog to save calibration to given file.
         """
+        crd = self.current_crd_file
         if save_as:
             query = QtWidgets.QFileDialog.getSaveFileName(
                 self,
@@ -852,7 +901,13 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
                 fname = Path(query[0]).with_suffix(".json")
         else:
             fname = None
-        rimseval.interfacer.save_cal_file(self.current_crd_file, fname=fname)
+        rimseval.interfacer.save_cal_file(crd, fname=fname)
+
+        # save as program default:
+        rimseval.interfacer.save_cal_file(
+            crd,
+            fname=self.app_local_path.joinpath("calibration.json"),
+        )
 
     # MASS CALIBRATION FUNCTIONS #
     def apply_mass_calibration(self):
@@ -1168,6 +1223,26 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self.update_info_window(update_all=True)
             self.update_plot_window()
 
+    def load_macro(self):
+        """Queries the user for a macro and sets it to the load macro state."""
+        query = QtWidgets.QFileDialog.getOpenFileName(
+            self,
+            "Open Macro File",
+            str(self.user_folder.absolute()),
+            "Python Files (*.py)",
+        )[0]
+        if query == "":
+            return
+        fname = Path(query)
+        self.user_macro = fname.absolute()
+        self.control_macro[2].setText(fname.name)
+
+    def unload_macro(self):
+        """Unloads the user macro."""
+        self.user_macro = None
+        self.control_macro[0].setChecked(False)
+        self.control_macro[2].setText("")
+
     def set_controls_from_filters(self):
         """Set the UI controls from the current CRD filters."""
         filters = self.current_crd_file.applied_filters
@@ -1207,6 +1282,13 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         if key in filters:
             self.control_max_ions_per_pkg[0].setChecked(filters[key][0])
             self.control_max_ions_per_pkg[1].setValue(filters[key][1])
+
+        key = "macro"
+        if key in filters:
+            self.control_macro[0].setChecked(filters[key][0])
+            macro_name = Path(filters[key][1])
+            self.user_macro = macro_name.absolute()
+            self.control_macro[2].setText(macro_name.name)
 
         key = "dead_time_corr"
         if key in filters:
@@ -1275,6 +1357,9 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self.control_max_ions_per_pkg[0].isChecked(),
             int(self.control_max_ions_per_pkg[1].value()),
         ]
+
+        if self.user_macro is not None:
+            filters["macro"] = [self.control_macro[0].isChecked(), str(self.user_macro)]
 
         filters["dead_time_corr"] = [
             self.control_dead_time_correction[0].isChecked(),
