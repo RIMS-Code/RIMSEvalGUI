@@ -2,4 +2,5 @@
 
 Testing packaging via fbs on this pre-release. 
 This is **NOT** intended for any user!
-New test.
+
+Renamed installer and action to match.
