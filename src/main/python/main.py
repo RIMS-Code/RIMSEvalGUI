@@ -3,6 +3,7 @@
 import itertools
 from pathlib import Path
 import sys
+from typing import Union
 
 try:
     from fbs_runtime.application_context.PyQt6 import ApplicationContext
@@ -45,11 +46,10 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.is_windows = is_windows
 
         # local profile
-        self.user_folder = Path.home()
+        self.config = None
+        self._user_folder = None
         self.app_local_path = None  # home path for the application configs, etc.
         self.init_local_profile()
-
-        self.config = None
         self.init_config_manager()
 
         # window titles and geometry
@@ -763,19 +763,22 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             "Copy integrals w/ unc.": True,
             "Bins for spectra export": 10,
             "Theme": "light",
+            "User folder": str(Path.home()),
         }
 
         default_settings_metadata = {
             "Theme": {
                 "preferred_handler": QtWidgets.QComboBox,
                 "preferred_map_dict": {"Dark Colors": "dark", "Light Colors": "light"},
-            }
+            },
+            "User folder": {"prefer_hidden": True},
         }
 
         self.config = ConfigManager(
             default_values, filename=self.app_local_path.joinpath("config.json")
         )
         self.config.set_many_metadata(default_settings_metadata)
+        self.user_folder = Path(self.config.get("User folder"))
 
     # PROPERTIES #
 
@@ -785,6 +788,22 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         if self.crd_files is not None:
             return self.crd_files.files[self.file_names_model.currently_active]
 
+    @property
+    def user_folder(self) -> Path:
+        """Set / get user folder (absolute path).
+
+        :return: User folder as Path (absolute)
+        """
+        return self._user_folder.absolute()
+
+    @user_folder.setter
+    def user_folder(self, value: Union[Path, str]):
+        if isinstance(value, str):
+            value = Path(value)
+        self._user_folder = value.absolute()
+        self.config.set("User folder", str(value.absolute()))
+        self.config.save()
+
     # FILE MENU FUNCTIONS #
 
     def open_crd(self):
@@ -792,7 +811,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         file_names = QtWidgets.QFileDialog.getOpenFileNames(
             self,
             "Open CRD File(s)",
-            str(self.user_folder.absolute()),
+            str(self.user_folder),
             "CRD Files (*.crd)",
         )[0]
 
@@ -847,7 +866,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             query = QtWidgets.QFileDialog.getOpenFileName(
                 self,
                 "Open Calibration File",
-                str(self.user_folder.absolute()),
+                str(self.user_folder),
                 "JSON Files (*.json)",
             )[0]
             if query == "":
@@ -870,7 +889,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             query = QtWidgets.QFileDialog.getOpenFileName(
                 self,
                 "Open LIONEval Calibration File",
-                str(self.user_folder.absolute()),
+                str(self.user_folder),
                 "Cal Files (*.cal)",
             )[0]
             if query == "":
@@ -894,7 +913,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             query = QtWidgets.QFileDialog.getSaveFileName(
                 self,
                 caption="Save calibration file as",
-                directory=str(self.user_folder.absolute()),
+                directory=str(self.user_folder),
                 filter="JSON Files (*.json)",
             )
             if query[0]:
@@ -1087,6 +1106,9 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
     def calculate_batch(self):
         """Applies the currently configured settings to all open CRD files."""
+        if not self.set_filters_from_controls():
+            return
+
         main_id = self.file_names_model.currently_active
         opt_mcal = self.config.get("Optimize Mass Calibration")
         bg_corr = self.control_bg_correction.isChecked()
@@ -1102,7 +1124,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         query = QtWidgets.QFileDialog.getOpenFileNames(
             self,
             "Open LST File(s)",
-            directory=str(self.user_folder.absolute()),
+            directory=str(self.user_folder),
             filter="LST Files (*.lst)",
         )[0]
 
@@ -1135,7 +1157,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         fname = QtWidgets.QFileDialog.getSaveFileName(
             self,
             "Save spectrum as CSV File",
-            str(self.user_folder.absolute()),
+            str(self.user_folder),
             "CSV Files (*.csv)",
         )[0]
 
@@ -1228,7 +1250,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         query = QtWidgets.QFileDialog.getOpenFileName(
             self,
             "Open Macro File",
-            str(self.user_folder.absolute()),
+            str(self.user_folder),
             "Python Files (*.py)",
         )[0]
         if query == "":
@@ -1347,6 +1369,17 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
                 float(self.control_max_ions_per_tof_window[3].value()),
             ],
         ]
+
+        if (
+            self.control_max_ions_per_pkg[0].isChecked()
+            and not self.control_packages[0].isChecked()
+        ):
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Package filters invalid",
+                "Please activate packaging if you want to filter by packages.",
+            )
+            return False
 
         filters["packages"] = [
             self.control_packages[0].isChecked(),

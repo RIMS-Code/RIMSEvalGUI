@@ -233,6 +233,7 @@ class PlotWindow(QtWidgets.QMainWindow):
         """Toggle the spectrum type that is being plotted."""
         self._plot_ms = not self._plot_ms
         self.button_spectrum_type.setChecked(self._plot_ms)
+        self.ax_autoscale_button.setChecked(True)
         self.plot_single()
 
     def update_data(self, crd: rimseval.CRDFileProcessor) -> None:

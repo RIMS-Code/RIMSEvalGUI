@@ -147,15 +147,16 @@ class FileInfoWindow(QtWidgets.QMainWindow):
     def update_current(self, crd: CRDFileProcessor) -> None:
         """Update current shot and package settings."""
         self.nof_shots_used.setText(str(crd.nof_shots))
+        self.hdr_nof_shots.setText(str(crd.crd.header["nofShots"]))
         self.nof_ions_used.setText(str(int(np.sum(crd.data))))
         nof_packages = (
             len(crd.nof_shots_pkg) if crd.nof_shots_pkg is not None else "N/A"
         )
+        self.nof_ions_total.setText(str(len(crd.crd.all_tofs)))
         self.nof_packages.setText(str(nof_packages))
 
     def update_header(self, crd: CRDFileProcessor) -> None:
         """Update header values and number of ions total."""
-        self.nof_ions_total.setText(str(len(crd.crd.all_tofs)))
 
         header = crd.crd.header
 
