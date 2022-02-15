@@ -82,6 +82,20 @@ The release workflow will trigger when the tag is pushed.
 It will package the software using `fbs pro`,
 and create a new release with the installers as assets.
 
+## Version numbering
+
+The actual GUI version is generally not very meaningful
+and the program itself will in fact display the version number
+of the `rimseval` package.
+The GUI version number itself is comprised of three numbers `x.y.z`. 
+The major and minor version `x` and `y` will follow along
+with the `rimseval` package, i.e.,
+will indicate for which `rimseval` package the GUI works.
+The patch number `z` will indicate bug fixes in the GUI.
+The GUI should work for `dev` versions of `rimseval`,
+however, the GUI itself will not have `dev` versions.
+This is required in order to compliant with `fbs`.
+
 ## Attribution
 
 ### Icons
