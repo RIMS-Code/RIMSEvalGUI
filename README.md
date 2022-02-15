@@ -66,6 +66,21 @@ If creating the installer fails,
 you are likely missing [NSIS](https://nsis.sourceforge.io/Main_Page).
 Install it and add its main folder to the system's `PATH` environment.
 
+## Packaging and Release with GitHub Actions
+
+Packaging and release of a new installer is also enabled
+via GitHub Actions, see 
+[here](https://github.com/trappitsch/fbs-release-github-actions).
+Ensure that the `release_text.md` file is filled with the text
+that you want to attach to the release.
+When done, push your changes to GitHub.
+Then create a tag to push as well. 
+The tag should be the version you want to release, 
+prepended by `v`, e.g., `v2.0.0`. 
+Then push the tag to GitHub.
+The release workflow will trigger when the tag is pushed.
+It will package the software using `fbs pro`,
+and create a new release with the installers as assets.
 
 ## Attribution
 
