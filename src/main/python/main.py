@@ -608,8 +608,6 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         export_mass_spectrum_action.triggered.connect(self.export_spectrum_as_csv)
         self.export_menu.addAction(export_mass_spectrum_action)
         self.export_mass_spectrum_action = export_mass_spectrum_action
-        # todo
-        self.export_mass_spectrum_action.setDisabled(True)
 
         export_tof_spectrum_action = QtGui.QAction(
             QtGui.QIcon(),
@@ -624,8 +622,6 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         )
         self.export_menu.addAction(export_tof_spectrum_action)
         self.export_tof_spectrum_action = export_tof_spectrum_action
-        # todo
-        self.export_tof_spectrum_action.setDisabled(True)
 
         # SPECIAL ACTIONS #
 
@@ -736,6 +732,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             "Tag Channel": 2,
             "Peak FWHM (us)": 0.02,
             "Copy integrals w/ unc.": True,
+            "Bins for spectra export": 10,
             "Theme": "light",
         }
 
@@ -1076,9 +1073,26 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
     def export_spectrum_as_csv(self, tof: bool = False) -> None:
         """Export a spectrum to a csv file.
 
-        :param tof: If true, export ToF spectrum, otherwise mass spectrum.
+        :param tof: If true, export ToF spectrum, otherwise tof and mass spectrum.
         """
-        pass
+        bins = self.config.get("Bins for spectra export")
+
+        fname = QtWidgets.QFileDialog.getSaveFileName(
+            self,
+            "Save spectrum as CSV File",
+            str(self.user_folder.absolute()),
+            "CSV Files (*.csv)",
+        )[0]
+
+        if len(fname) > 0:
+            if tof:
+                rimseval.data_io.export.tof_spectrum(
+                    self.current_crd_file, Path(fname), bins=bins
+                )
+            else:
+                rimseval.data_io.export.mass_spectrum(
+                    self.current_crd_file, Path(fname), bins=bins
+                )
 
     # SPECIAL FUNCTIONS #
 
@@ -1320,12 +1334,18 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self.mass_cal_def_action,
             self.calculate_single_action,
             self.calculate_batch_action,
-            # todo self.export_tof_spectrum_action,
             # todo self.special_hist_dt_ions_action,
             # todo self.special_hist_ions_shot_action,
         ]
         if crd is not None:  # so we have a file!
             for action in crd_loaded_actions:
+                action.setEnabled(True)
+
+        tof_exists_actions = [
+            self.export_tof_spectrum_action,
+        ]
+        if crd.tof is not None:
+            for action in tof_exists_actions:
                 action.setEnabled(True)
 
         mass_cal_exists_actions = [
@@ -1341,7 +1361,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self.integrals_set_edit_action,
             self.integrals_draw_action,
             # todo self.integrals_fitting_action,
-            # todo self.export_mass_spectrum_action,
+            self.export_mass_spectrum_action,
         ]
         if crd.mass is not None:
             for action in mass_cal_applied_actions:
