@@ -1127,6 +1127,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             directory=str(self.user_folder),
             filter="LST Files (*.lst)",
         )[0]
+        import time
 
         if len(query) > 0:
             fnames = [Path(it) for it in query]
@@ -1135,15 +1136,26 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
                 tag = self.config.get("Tag Channel")
             else:
                 tag = None
-            for fname in fnames:
+            for it, fname in enumerate(fnames):
                 try:
                     lst = rimseval.data_io.lst_to_crd.LST2CRD(
                         file_name=fname, channel_data=channel, channel_tag=tag
                     )
                     lst.read_list_file()
                     lst.write_crd()
+
+                    self.status_bar.showMessage(
+                        f"{fname.name} converted, {it+1}/{len(fnames)} done.",
+                        msecs=self.status_bar_time,
+                    )
+                    QtWidgets.QApplication.processEvents()
+                    time.sleep(1)
+
                 except OSError as err:
                     QtWidgets.QMessageBox.warning(self, "LST File error", err.args[0])
+
+            # set user path to this folder
+            self.user_folder = fname.parent
 
     # EXPORT FUNCTIONS #
 
