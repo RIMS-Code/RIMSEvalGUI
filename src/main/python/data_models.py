@@ -70,28 +70,37 @@ class IntegralsModel(QtCore.QAbstractTableModel):
         """
         super().__init__()
         self._names = names
-        self._header = ["Counts", "Uncertainty"]
+        self._header = ["Peak", "Counts", "Uncertainty"]
 
         if data is None:
-            self._data = np.empty((0, 0))
+            self._data = np.zeros((0, 0))
+        else:
+            self._data = data
 
     def columnCount(self, index):
         """Return the number of columns."""
-        return self._data.shape[1]
+        if self._data.shape[1] == 0:
+            return 0
+        else:
+            return self._data.shape[1] + 1  # add names
 
     def data(self, index, role):
         """Return the data."""
+        row = index.row()
+        col = index.column()
+
         if role == QtCore.Qt.ItemDataRole.DisplayRole:
-            value = np.round(self._data[index.row()][index.column()], 2)
-            return str(value)
+            if col == 0:
+                return str(self._names[row])
+            else:
+                value = np.round(self._data[row][col - 1], 2)
+                return str(value)
 
     def headerData(self, section, orientation, role):
         # section is the index of the column/row.
         if role == QtCore.Qt.ItemDataRole.DisplayRole:
             if orientation == QtCore.Qt.Orientation.Horizontal:
                 return str(self._header[section])
-            if orientation == QtCore.Qt.Orientation.Vertical:
-                return str(self._names[section])
 
     def rowCount(self, index):
         """Return the number of rows."""
