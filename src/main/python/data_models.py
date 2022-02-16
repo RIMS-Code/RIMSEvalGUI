@@ -91,7 +91,10 @@ class IntegralsModel(QtCore.QAbstractTableModel):
 
         if role == QtCore.Qt.ItemDataRole.DisplayRole:
             if col == 0:
-                return str(self._names[row])
+                try:
+                    return str(self._names[row])
+                except IndexError:
+                    return "N/A"
             else:
                 value = np.round(self._data[row][col - 1], 2)
                 return str(value)
