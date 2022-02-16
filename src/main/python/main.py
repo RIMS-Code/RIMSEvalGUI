@@ -829,6 +829,9 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self.user_folder = file_paths[0].parent
 
             self.crd_files = rimseval.MultiFileProcessor(file_paths)
+            self.crd_files.signal_processed.connect(
+                lambda x: self.update_status_bar_processed(x)
+            )
             self.crd_files.open_files()  # open, but no read
             self.crd_files.peak_fwhm = self.config.get("Peak FWHM (us)")
 
@@ -1103,6 +1106,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.update_action_status()
         self.update_info_window(update_all=False)
         self.update_plot_window()
+        self.update_status_bar_processed(str(crd.fname.name))
 
     def calculate_batch(self):
         """Applies the currently configured settings to all open CRD files."""
@@ -1127,7 +1131,6 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             directory=str(self.user_folder),
             filter="LST Files (*.lst)",
         )[0]
-        import time
 
         if len(query) > 0:
             fnames = [Path(it) for it in query]
@@ -1149,7 +1152,6 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
                         msecs=self.status_bar_time,
                     )
                     QtWidgets.QApplication.processEvents()
-                    time.sleep(1)
 
                 except OSError as err:
                     QtWidgets.QMessageBox.warning(self, "LST File error", err.args[0])
@@ -1534,6 +1536,16 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
     def update_plot_window(self) -> None:
         """Update the plot window."""
         self.plot_window.update_data(self.current_crd_file)
+
+    def update_status_bar_processed(self, name) -> None:
+        """Print message to status bar that a given file has been processed.
+
+        :param name: Name of the file that has been processed
+        """
+        self.status_bar.showMessage(
+            f"{name} has been processed", msecs=self.status_bar_time
+        )
+        QtWidgets.QApplication.processEvents()
 
 
 if __name__ == "__main__":
