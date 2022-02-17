@@ -94,6 +94,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.integrals_fitting_action = None
         self.integrals_copy_action = None
         self.integrals_copy_w_names_action = None
+        self.integrals_copy_all_w_fnames_action = None
         self.integrals_copy_pkg_action = None
         self.integrals_copy_pkg_w_names_action = None
         self.backgrounds_draw_action = None
@@ -522,6 +523,23 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         )
         self.integrals_menu.addAction(integrals_copy_w_names_action)
         self.integrals_copy_w_names_action = integrals_copy_w_names_action
+
+        integrals_copy_all_w_fnames_action = QtGui.QAction(
+            QtGui.QIcon(None),
+            "Copy All Integrals w/ file names",
+            self,
+        )
+        integrals_copy_all_w_fnames_action.setStatusTip(
+            "Copy all file & peak names and integrals to the clipboard (open files)"
+        )
+        integrals_copy_all_w_fnames_action.setShortcut(
+            QtGui.QKeySequence("Ctrl+Shift+c")
+        )
+        integrals_copy_all_w_fnames_action.triggered.connect(
+            self.integrals_copy_all_to_clipboard
+        )
+        self.integrals_menu.addAction(integrals_copy_all_w_fnames_action)
+        self.integrals_copy_all_w_fnames_action = integrals_copy_all_w_fnames_action
 
         integrals_copy_pkg_action = QtGui.QAction(
             QtGui.QIcon(None),
@@ -1009,6 +1027,23 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self.integrals_model.get_integrals_to_copy(names=get_names, unc=get_unc)
         )
 
+    def integrals_copy_all_to_clipboard(self):
+        """Copy all integrals with the filename to the clipboard."""
+        get_unc = self.config.get("Copy integrals w/ unc.")
+
+        ret_str = ""
+
+        for crd in self.crd_files.files:
+            if (integrals := crd.integrals) is not None:
+                ret_str += f"{crd.fname.with_suffix('').name}\t"
+                for col, val in enumerate(integrals):
+                    ret_str += f"{val[0]}\t{val[1]}" if get_unc else f"{val[0]}"
+                    if col < len(integrals) - 1:
+                        ret_str += "\t"
+                ret_str += "\n"
+
+        QtWidgets.QApplication.clipboard().setText(ret_str)
+
     def integrals_pkg_copy_to_clipboard(self, get_names: bool = False):
         """Copy the integrals to the clipboard for pasting into, e.g., Excel.
 
@@ -1118,6 +1153,12 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         opt_mcal = self.config.get("Optimize Mass Calibration")
         bg_corr = self.control_bg_correction.isChecked()
         self.crd_files.apply_to_all(main_id, opt_mcal=opt_mcal, bg_corr=bg_corr)
+
+        # update stuff
+        self.update_action_status()
+        self.update_info_window(update_all=False)
+        self.update_plot_window()
+        self.update_integral_view()
 
     # LST FILE FUNCTIONS #
 
@@ -1258,11 +1299,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         else:
             self.update_action_status()
             self.update_info_window(update_all=True)
-            if self.current_crd_file.integrals is not None:
-                self.integrals_model.update_data(
-                    self.current_crd_file.integrals,
-                    self.current_crd_file.def_integrals[0],
-                )
+            self.update_integral_view()
             self.update_plot_window()
 
     def load_macro(self):
@@ -1447,6 +1484,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self.integrals_fitting_action,
             self.integrals_copy_action,
             self.integrals_copy_w_names_action,
+            self.integrals_copy_all_w_fnames_action,
             self.integrals_copy_pkg_action,
             self.integrals_copy_pkg_w_names_action,
             self.backgrounds_draw_action,
@@ -1508,6 +1546,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         integrals_available_actions = [
             self.integrals_copy_action,
             self.integrals_copy_w_names_action,
+            self.integrals_copy_all_w_fnames_action,
         ]
         if crd.integrals is not None:
             for action in integrals_available_actions:
@@ -1538,6 +1577,14 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.info_window.update_current(crd_file)
         if update_all:
             self.info_window.update_header(crd_file)
+
+    def update_integral_view(self) -> None:
+        """Update the integral view when necessary."""
+        if self.current_crd_file.integrals is not None:
+            self.integrals_model.update_data(
+                self.current_crd_file.integrals,
+                self.current_crd_file.def_integrals[0],
+            )
 
     def update_plot_window(self) -> None:
         """Update the plot window."""
