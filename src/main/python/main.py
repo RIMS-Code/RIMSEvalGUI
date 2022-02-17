@@ -991,7 +991,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         dialog = IntegralEditDialog(model, parent=self)
         if dialog.exec():
             self.current_crd_file.def_integrals = model.return_data()
-            # self.update_all()
+            self.update_all()
 
     def integrals_fitting(self):
         """Define integrals by fitting them."""
