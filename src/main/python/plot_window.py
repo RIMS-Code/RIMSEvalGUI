@@ -144,19 +144,23 @@ class PlotWindow(QtWidgets.QMainWindow):
 
         :param crd: CRD File to plot from
         """
+        self.axes.clear()
+
         if self.mass is None or not self._plot_ms:
+            if self.tof is None:  # no data...
+                self.sc.draw()  # clear plot
+                return
             xax = self.tof
             xlabel = "Time of Flight (us)"
         elif self.tof is not None:
             xax = self.mass
             xlabel = "Mass (amu)"
         else:
+            self.sc.draw()
             return
 
         xlim = self.axes.get_xlim()
         ylim = self.axes.get_ylim()
-
-        self.axes.clear()
 
         color = "w" if self.theme == "dark" else "k"
 

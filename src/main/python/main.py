@@ -463,24 +463,24 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         # INTEGRALS ACTIONS #
 
         integrals_set_edit_action = QtGui.QAction(
-            QtGui.QIcon(None),
+            QtGui.QIcon(self.appctxt.get_resource("icons/system-monitor.png")),
             "Set / Edit Integrals",
             self,
         )
         integrals_set_edit_action.setStatusTip("Set new or edit existing integrals.")
         integrals_set_edit_action.triggered.connect(self.integrals_set_edit)
         self.integrals_menu.addAction(integrals_set_edit_action)
+        tool_bar.addAction(integrals_set_edit_action)
         self.integrals_set_edit_action = integrals_set_edit_action
 
         integrals_draw_action = QtGui.QAction(
-            QtGui.QIcon(self.appctxt.get_resource("icons/system-monitor.png")),
+            QtGui.QIcon(None),
             "Draw Integrals",
             self,
         )
         integrals_draw_action.setStatusTip("Define integrals by drawing them")
         integrals_draw_action.triggered.connect(self.integrals_draw)
         self.integrals_menu.addAction(integrals_draw_action)
-        tool_bar.addAction(integrals_draw_action)
         self.integrals_draw_action = integrals_draw_action
 
         integrals_fitting_action = QtGui.QAction(
@@ -847,6 +847,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
                     calfile = None
                 if calfile:
                     rimseval.interfacer.load_cal_file(crd, calfile)
+                    self.set_controls_from_filters()
 
             self.file_names_model.set_new_list(file_paths)
 
@@ -1257,6 +1258,11 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         else:
             self.update_action_status()
             self.update_info_window(update_all=True)
+            if self.current_crd_file.integrals is not None:
+                self.integrals_model.update_data(
+                    self.current_crd_file.integrals,
+                    self.current_crd_file.def_integrals[0],
+                )
             self.update_plot_window()
 
     def load_macro(self):
