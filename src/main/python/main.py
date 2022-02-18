@@ -28,6 +28,7 @@ from dialogs import AboutDialog, BackgroundEditDialog, IntegralEditDialog, MassC
 from elements import PeriodicTable
 from info_window import FileInfoWindow
 from plot_window import PlotWindow
+from statusindicator import StatusIndicator
 
 
 class MainRimsEvalGui(QtWidgets.QMainWindow):
@@ -144,6 +145,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         # bars and layouts of program
         self.main_widget = QtWidgets.QWidget()
         self.status_bar = QtWidgets.QStatusBar()
+        self.status_widget = StatusIndicator(size=20, margin=0)
 
         # variables to be defined
         self.status_bar_time = 5000  # status bar time in msec
@@ -152,16 +154,17 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.setCentralWidget(self.main_widget)
         self.setStatusBar(self.status_bar)
 
+        # initialize the UI
+        self.init_menu_toolbar()
+        self.init_main_widget()
+        self.init_status_bar()
+
+        self.setStyleSheet(qdarktheme.load_stylesheet(self.config.get("Theme")))
+
         # welcome the user
         self.status_bar.showMessage(
             f"Welcome to RIMSEval v{rimseval.__version__}", msecs=self.status_bar_time
         )
-
-        # initialize the UI
-        self.init_menu_toolbar()
-        self.init_main_widget()
-
-        self.setStyleSheet(qdarktheme.load_stylesheet(self.config.get("Theme")))
 
         # update actions
         self.update_action_status()
@@ -191,6 +194,12 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         layout.addWidget(self.file_names_view)
 
         # FILE CONTROL #
+
+        # create lists to connect to status indicator when changed
+        all_control_toggles = []
+        all_control_text_edits = []
+        all_control_value_edits = []
+
         control_layout = QtWidgets.QVBoxLayout()
 
         tmphbox = QtWidgets.QHBoxLayout()
@@ -205,6 +214,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         )
         tmphbox.addWidget(self.control_spectrum_part[1])
         control_layout.addLayout(tmphbox)
+        all_control_toggles.append(self.control_spectrum_part[0])
+        all_control_text_edits.append(self.control_spectrum_part[1])
 
         tmphbox = QtWidgets.QHBoxLayout()
         self.control_max_ions_per_shot[0].setText("Max ions / shot")
@@ -217,6 +228,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.control_max_ions_per_shot[1].setToolTip("Maximum number of ions")
         tmphbox.addWidget(self.control_max_ions_per_shot[1])
         control_layout.addLayout(tmphbox)
+        all_control_toggles.append(self.control_max_ions_per_shot[0])
+        all_control_value_edits.append(self.control_max_ions_per_shot[1])
 
         tmphbox = QtWidgets.QHBoxLayout()
         self.control_max_ions_per_time[0].setText("Max ions / time")
@@ -232,6 +245,9 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.control_max_ions_per_time[2].setToolTip("Time in us")
         tmphbox.addWidget(self.control_max_ions_per_time[2])
         control_layout.addLayout(tmphbox)
+        all_control_toggles.append(self.control_max_ions_per_time[0])
+        all_control_value_edits.append(self.control_max_ions_per_time[1])
+        all_control_value_edits.append(self.control_max_ions_per_time[2])
 
         tmphbox = QtWidgets.QHBoxLayout()
         self.control_max_ions_per_tof_window[0].setText("Max ions / ToF Window")
@@ -250,6 +266,10 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.control_max_ions_per_tof_window[3].setToolTip("Window end ToF (us)")
         tmphbox.addWidget(self.control_max_ions_per_tof_window[3])
         control_layout.addLayout(tmphbox)
+        all_control_toggles.append(self.control_max_ions_per_tof_window[0])
+        all_control_value_edits.append(self.control_max_ions_per_tof_window[1])
+        all_control_value_edits.append(self.control_max_ions_per_tof_window[2])
+        all_control_value_edits.append(self.control_max_ions_per_tof_window[3])
 
         tmphbox = QtWidgets.QHBoxLayout()
         self.control_packages[0].setText("Packages")
@@ -262,6 +282,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.control_packages[1].setToolTip("Number of shots per package")
         tmphbox.addWidget(self.control_packages[1])
         control_layout.addLayout(tmphbox)
+        all_control_toggles.append(self.control_packages[0])
+        all_control_value_edits.append(self.control_packages[1])
 
         tmphbox = QtWidgets.QHBoxLayout()
         self.control_max_ions_per_pkg[0].setText("Max ions / package")
@@ -274,6 +296,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.control_max_ions_per_pkg[1].setToolTip("Maximum number of ions")
         tmphbox.addWidget(self.control_max_ions_per_pkg[1])
         control_layout.addLayout(tmphbox)
+        all_control_toggles.append(self.control_max_ions_per_pkg[0])
+        all_control_value_edits.append(self.control_max_ions_per_pkg[1])
 
         tmphbox = QtWidgets.QHBoxLayout()
         self.control_macro[0].setText("Run Macro")
@@ -289,6 +313,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         tmphbox.addStretch()
         tmphbox.addWidget(self.control_macro[2])
         control_layout.addLayout(tmphbox)
+        all_control_toggles.append(self.control_macro[0])
 
         tmphbox = QtWidgets.QHBoxLayout()
         self.control_dead_time_correction[0].setText("Dead time correction")
@@ -303,6 +328,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         )
         tmphbox.addWidget(self.control_dead_time_correction[1])
         control_layout.addLayout(tmphbox)
+        all_control_toggles.append(self.control_dead_time_correction[0])
+        all_control_value_edits.append(self.control_dead_time_correction[1])
 
         separator = QtWidgets.QFrame()
         separator.setFrameShape(QtWidgets.QFrame.Shape.HLine)
@@ -320,11 +347,20 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         tmphbox.addWidget(self.control_bg_correction)
         tmphbox.addStretch()
         control_layout.addLayout(tmphbox)
+        all_control_toggles.append(self.control_bg_correction)
 
         # end of control layout
         control_layout.addStretch()
 
         layout.addLayout(control_layout)
+
+        # connect control toggles and edits to status indicator
+        for tog in all_control_toggles:
+            tog.stateChanged.connect(lambda: self.status_widget.set_status("outdated"))
+        for ed in all_control_text_edits:
+            ed.textChanged.connect(lambda: self.status_widget.set_status("outdated"))
+        for val in all_control_value_edits:
+            val.valueChanged.connect(lambda: self.status_widget.set_status("outdated"))
 
         # INTEGRALS VIEW #
         integral_display = IntegralsDisplay(self)
@@ -772,6 +808,17 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         # add toolbar to self
         self.addToolBar(tool_bar)
 
+    def init_status_bar(self):
+        """Initialize the status bar."""
+        self.status_widget.setToolTip(
+            "Status of calculation:\n"
+            "Green:\tCalculation up to date\n"
+            "Red:\tCalculation outdated\n"
+            "Black:\tError\n"
+            "Gray:\tNo Files loaded"
+        )
+        self.status_bar.addPermanentWidget(self.status_widget, stretch=1)
+
     def init_config_manager(self):
         """Initialize the configuration manager and load the default configuration."""
         default_values = {
@@ -838,6 +885,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
         try:
             if len(file_names) > 0:
+                self.status_widget.set_status("outdated")
                 # close files and remove from memory if they exist
                 if self.crd_files:
                     self.crd_files.close_files()
@@ -886,6 +934,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.warning(
                 self, "Error occured when opening files", err.args[0]
             )
+            self.status_widget.set_status("error")
 
     def load_calibration(self, fname: Path = None):
         """Load a specific calibration file.
@@ -905,6 +954,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
         rimseval.interfacer.load_cal_file(self.current_crd_file, fname)
 
+        self.status_widget.set_status("outdated")
         self.set_controls_from_filters()
 
         if self.config.get("Calculate on open"):
@@ -928,6 +978,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
         rimseval.interfacer.read_lion_eval_calfile(self.current_crd_file, fname)
 
+        self.status_widget.set_status("outdated")
         self.set_controls_from_filters()
 
         if self.config.get("Calculate on open"):
@@ -968,6 +1019,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
                     crd.spectrum_full()
                 crd.mass_calibration()
                 self.update_all()
+                self.status_widget.set_status("outdated")
 
     def create_mass_calibration(self):
         """Enable user to create a mass calibration."""
@@ -978,6 +1030,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         )
         window.signal_calibration_applied.connect(self.update_all)
         window.show()
+        self.status_widget.set_status("outdated")
 
     def optimize_mass_calibration(self):
         """Optimize a given mass calibration by re-fitting all the peaks."""
@@ -993,6 +1046,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
                         self, "Mass calibratiaon optimization failed", err.args[0]
                     )
                 self.update_all()
+                self.status_widget.set_status("outdated")
 
     def show_mass_calibration(self):
         """Show the current Mass calibration as a QDialog."""
@@ -1011,6 +1065,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         )
         window.signal_integrals_defined.connect(self.update_all)
         window.show()
+        self.status_widget.set_status("outdated")
 
     def integrals_set_edit(self):
         """Enable user to set integrals with a table widget."""
@@ -1020,9 +1075,12 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self.current_crd_file.def_integrals = model.return_data()
             self.update_all()
 
+            self.status_widget.set_status("outdated")
+
     def integrals_fitting(self):
         """Define integrals by fitting them."""
         # todo in second version
+        self.status_widget.set_status("outdated")
         raise NotImplementedError
 
     def integrals_copy_to_clipboard(self, get_names: bool = False):
@@ -1093,6 +1151,9 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         window.signal_backgrounds_defined.connect(self.update_all)
         window.show()
 
+        if self.control_bg_correction[0].isChecked():
+            self.status_widget.set_status("outdated")
+
     def backgrounds_set_edit(self):
         """Open GUI for user to set / edit backgrounds by hand."""
         model = IntegralBackgroundDefinitionModel(self.current_crd_file.def_backgrounds)
@@ -1102,6 +1163,9 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         if dialog.exec():
             self.current_crd_file.def_backgrounds = model.return_data()
             self.update_all()
+
+            if self.control_bg_correction[0].isChecked():
+                self.status_widget.set_status("outdated")
 
     # CALCULATE FUNCTIONS #
 
@@ -1127,6 +1191,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self.current_crd_file.calculate_applied_filters()
         except Exception as err:
             QtWidgets.QMessageBox.warning(self, "Error in calculation", err.args[0])
+            self.status_widget.set_status("error")
             return
 
         # integrals
@@ -1152,6 +1217,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.update_plot_window()
         self.update_status_bar_processed(str(crd.fname.name))
 
+        self.status_widget.set_status("current")
+
     def calculate_batch(self):
         """Applies the currently configured settings to all open CRD files."""
         if not self.set_filters_from_controls():
@@ -1167,6 +1234,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.update_info_window(update_all=False)
         self.update_plot_window()
         self.update_integral_view()
+
+        self.status_widget.set_status("current")
 
     # LST FILE FUNCTIONS #
 
@@ -1302,6 +1371,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
         self.set_controls_from_filters()
 
+        self.status_widget.set_status("outdated")
+
         if self.config.get("Calculate on open"):
             self.calculate_single()
         else:
@@ -1323,6 +1394,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         fname = Path(query)
         self.user_macro = fname.absolute()
         self.control_macro[2].setText(fname.name)
+
+        self.status_widget.set_status("outdated")
 
     def unload_macro(self):
         """Unloads the user macro."""
