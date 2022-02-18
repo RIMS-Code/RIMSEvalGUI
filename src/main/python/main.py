@@ -321,6 +321,9 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         tmphbox.addStretch()
         control_layout.addLayout(tmphbox)
 
+        # end of control layout
+        control_layout.addStretch()
+
         layout.addLayout(control_layout)
 
         # INTEGRALS VIEW #
