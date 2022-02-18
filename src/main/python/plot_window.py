@@ -144,6 +144,11 @@ class PlotWindow(QtWidgets.QMainWindow):
 
         :param crd: CRD File to plot from
         """
+        xlim = self.axes.get_xlim()
+        ylim = self.axes.get_ylim()
+        if self.logy:
+            ylim = 0.7, ylim[1]
+
         self.axes.clear()
 
         if self.mass is None or not self._plot_ms:
@@ -158,9 +163,6 @@ class PlotWindow(QtWidgets.QMainWindow):
         else:
             self.sc.draw()
             return
-
-        xlim = self.axes.get_xlim()
-        ylim = self.axes.get_ylim()
 
         color = "w" if self.theme == "dark" else "k"
 
