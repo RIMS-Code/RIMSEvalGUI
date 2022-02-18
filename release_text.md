@@ -1,16 +1,10 @@
-# RIMSEvalGUI v2.0.0 for `rimseval` v2.0.0.dev0
+# RIMSEvalGUI v2.0.1
 
-This is the first version of the RIMSEval GUI.
-Attached installer can be used on Windows, 
-macOS will be supported in a future release.
+Second version of RIMSEvalGUI based on the latest `rimseval` development version `v2.0.0.dev1`.
 
-This version of the GUI wraps around
-`rimseval` package v2.0.0.dev0.
+Changes to GUI:
+- Fix autoscale
+- Add file name as title to plot window
+- Wrap open CRD file dialog into a `try` statement to show error messages if errors occur
 
-Please report issues on GitHub:
-GUI issues should be reported in the 
-[GUI repo](https://github.com/RIMS-Code/RIMSEvalGUI),
-package issue in the 
-[package repo](https://github.com/RIMS-Code/RIMSEval).
-If you are unsure which part your issue relates to,
-simply pick a repo to post in.
+Changes in `rimseval` package: see [here](https://github.com/RIMS-Code/RIMSEval/releases/tag/v2.0.0.dev1)
