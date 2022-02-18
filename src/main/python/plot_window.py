@@ -43,6 +43,7 @@ class PlotWindow(QtWidgets.QMainWindow):
         self._background_shades_ref = None
 
         # empty data
+        self.file_name = None
         self.mass = None
         self.tof = None
         self.data = None
@@ -178,6 +179,9 @@ class PlotWindow(QtWidgets.QMainWindow):
             self.axes.set_xlim(xlim)
             self.axes.set_ylim(ylim)
 
+        # title
+        self.axes.set_title(self.file_name)
+
         self.sc.draw()
 
         if self._plot_ms:  # only when in mass spectrum mode
@@ -244,6 +248,7 @@ class PlotWindow(QtWidgets.QMainWindow):
 
     def update_data(self, crd: rimseval.CRDFileProcessor) -> None:
         """Update the data required for plotting."""
+        self.file_name = crd.fname.with_suffix("").name
         self.mass = crd.mass
         self.tof = crd.tof
         self.data = crd.data
