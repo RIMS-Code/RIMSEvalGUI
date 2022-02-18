@@ -836,51 +836,56 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             "CRD Files (*.crd)",
         )[0]
 
-        if len(file_names) > 0:
-            # close files and remove from memory if they exist
-            if self.crd_files:
-                self.crd_files.close_files()
+        try:
+            if len(file_names) > 0:
+                # close files and remove from memory if they exist
+                if self.crd_files:
+                    self.crd_files.close_files()
 
-            self.integrals_model.clear_data()
-            self.plot_window.clear_plot()
+                self.integrals_model.clear_data()
+                self.plot_window.clear_plot()
 
-            file_paths = [Path(file_name) for file_name in file_names]
+                file_paths = [Path(file_name) for file_name in file_names]
 
-            # set user path to this folder
-            self.user_folder = file_paths[0].parent
+                # set user path to this folder
+                self.user_folder = file_paths[0].parent
 
-            self.crd_files = rimseval.MultiFileProcessor(file_paths)
-            self.crd_files.signal_processed.connect(
-                lambda x: self.update_status_bar_processed(x)
-            )
-            self.crd_files.open_files()  # open, but no read
-            self.crd_files.peak_fwhm = self.config.get("Peak FWHM (us)")
+                self.crd_files = rimseval.MultiFileProcessor(file_paths)
+                self.crd_files.signal_processed.connect(
+                    lambda x: self.update_status_bar_processed(x)
+                )
+                self.crd_files.open_files()  # open, but no read
+                self.crd_files.peak_fwhm = self.config.get("Peak FWHM (us)")
 
-            # apply specifications if here:
-            for crd in self.crd_files.files:
-                if (calfile := crd.fname.with_suffix(".json")).is_file():
-                    pass
-                elif (
-                    calfile := self.app_local_path.joinpath("calibration.json")
-                ).is_file():
-                    pass
+                # apply specifications if here:
+                for crd in self.crd_files.files:
+                    if (calfile := crd.fname.with_suffix(".json")).is_file():
+                        pass
+                    elif (
+                        calfile := self.app_local_path.joinpath("calibration.json")
+                    ).is_file():
+                        pass
+                    else:
+                        calfile = None
+                    if calfile:
+                        rimseval.interfacer.load_cal_file(crd, calfile)
+                        self.set_controls_from_filters()
+
+                self.file_names_model.set_new_list(file_paths)
+
+                if self.config.get("Calculate on open"):
+                    self.crd_files.read_files()
+                    if self.config.get("Optimize Mass Calibration"):
+                        self.optimize_mass_calibration()
+                    self.calculate_single()
                 else:
-                    calfile = None
-                if calfile:
-                    rimseval.interfacer.load_cal_file(crd, calfile)
-                    self.set_controls_from_filters()
+                    self.update_action_status()
 
-            self.file_names_model.set_new_list(file_paths)
-
-            if self.config.get("Calculate on open"):
-                self.crd_files.read_files()
-                if self.config.get("Optimize Mass Calibration"):
-                    self.optimize_mass_calibration()
-                self.calculate_single()
-            else:
-                self.update_action_status()
-
-            self.update_info_window(update_all=True)
+                self.update_info_window(update_all=True)
+        except Exception as err:
+            QtWidgets.QMessageBox.warning(
+                self, "Error occured when opening files", err.args[0]
+            )
 
     def load_calibration(self, fname: Path = None):
         """Load a specific calibration file.
