@@ -29,6 +29,7 @@ from elements import PeriodicTable
 from info_window import FileInfoWindow
 from plot_window import PlotWindow
 from statusindicator import StatusIndicator
+import widgets
 
 
 class MainRimsEvalGui(QtWidgets.QMainWindow):
@@ -141,6 +142,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.elements_window = PeriodicTable(self)
         self.info_window = FileInfoWindow(self)
         self.plot_window = PlotWindow(self)
+        self.tmp_window = None  # container in self for plot windows from package
 
         # bars and layouts of program
         self.main_widget = QtWidgets.QWidget()
@@ -826,11 +828,15 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             "Peak FWHM (us)": 0.02,
             "Copy integrals w/ unc.": True,
             "Bins for spectra export": 10,
+            "Max. time dt ions histogram (ns)": 120,
             "Theme": "light",
             "User folder": str(Path.home()),
         }
 
         default_settings_metadata = {
+            "Max. time dt ions histogram (ns)": {
+                "preferred_handler": widgets.LargeQSpinBox
+            },
             "Theme": {
                 "preferred_handler": QtWidgets.QComboBox,
                 "preferred_map_dict": {"Dark Colors": "dark", "Light Colors": "light"},
@@ -1021,11 +1027,17 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         """Enable user to create a mass calibration."""
         logy = self.config.get("Plot with log y-axis")
         theme = self.config.get("Theme")
-        window = rimseval.guis.mcal.CreateMassCalibration(
-            self.current_crd_file, logy=logy, theme=theme
+
+        crd = self.current_crd_file
+
+        if crd.tof is None:
+            crd.spectrum_full()
+
+        self.tmp_window = rimseval.guis.mcal.CreateMassCalibration(
+            crd, logy=logy, theme=theme
         )
-        window.signal_calibration_applied.connect(self.update_all)
-        window.show()
+        self.tmp_window.signal_calibration_applied.connect(self.update_all)
+        self.tmp_window.show()
         self.status_widget.set_status("outdated")
 
     def optimize_mass_calibration(self):
@@ -1056,11 +1068,11 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         """Enable user to draw integrals."""
         logy = self.config.get("Plot with log y-axis")
         theme = self.config.get("Theme")
-        window = rimseval.guis.integrals.DefineIntegrals(
+        self.tmp_window = rimseval.guis.integrals.DefineIntegrals(
             self.current_crd_file, logy=logy, theme=theme
         )
-        window.signal_integrals_defined.connect(self.update_all)
-        window.show()
+        self.tmp_window.signal_integrals_defined.connect(self.update_all)
+        self.tmp_window.show()
         self.status_widget.set_status("outdated")
 
     def integrals_set_edit(self):
@@ -1141,11 +1153,11 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         """Open GUI for user to draw backgrounds."""
         logy = self.config.get("Plot with log y-axis")
         theme = self.config.get("Theme")
-        window = rimseval.guis.integrals.DefineBackgrounds(
+        self.tmp_window = rimseval.guis.integrals.DefineBackgrounds(
             self.current_crd_file, logy=logy, theme=theme
         )
-        window.signal_backgrounds_defined.connect(self.update_all)
-        window.show()
+        self.tmp_window.signal_backgrounds_defined.connect(self.update_all)
+        self.tmp_window.show()
 
         if self.control_bg_correction[0].isChecked():
             self.status_widget.set_status("outdated")
@@ -1305,15 +1317,23 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
     def histogram_ions_per_shot(self):
         """Plot a histogram of ions per shot."""
         theme = self.config.get("Theme")
-        plt_window = rimseval.guis.plots.IonsPerShot(self.current_crd_file, theme=theme)
-        plt_window.show()
+        self.tmp_window = rimseval.guis.plots.IonsPerShot(
+            self.current_crd_file, theme=theme
+        )
+        self.tmp_window.show()
 
     def histogram_dt_ions(self):
         """Plot a histogram of time delta between arriving ions.
 
         Only done for shots with more than 2 ions.
         """
-        pass
+        theme = self.config.get("Theme")
+        max_ns = self.config.get("Max. time dt ions histogram (ns)")
+
+        self.tmp_window = rimseval.guis.plots.DtIons(
+            self.current_crd_file, theme=theme, max_ns=max_ns
+        )
+        self.tmp_window.show()
 
     # VIEW FUNCTIONS #
 
