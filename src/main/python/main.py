@@ -720,8 +720,6 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         special_hist_ions_shot_action.triggered.connect(self.histogram_ions_per_shot)
         self.special_menu.addAction(special_hist_ions_shot_action)
         self.special_hist_ions_shot_action = special_hist_ions_shot_action
-        # todo second version
-        self.special_hist_ions_shot_action.setDisabled(True)
 
         special_hist_dt_ions_action = QtGui.QAction(
             QtGui.QIcon(None),
@@ -731,11 +729,9 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         special_hist_dt_ions_action.setStatusTip(
             "Show a histogram for multi-ion shots with time differences between ions."
         )
-        special_hist_dt_ions_action.triggered.connect(self.histogram_ions_per_shot)
+        special_hist_dt_ions_action.triggered.connect(self.histogram_dt_ions)
         self.special_menu.addAction(special_hist_dt_ions_action)
         self.special_hist_dt_ions_action = special_hist_dt_ions_action
-        # todo second version
-        self.special_hist_dt_ions_action.setDisabled(True)
 
         # VIEW ACIONS #
 
@@ -1308,7 +1304,9 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
     def histogram_ions_per_shot(self):
         """Plot a histogram of ions per shot."""
-        pass
+        theme = self.config.get("Theme")
+        plt_window = rimseval.guis.plots.IonsPerShot(self.current_crd_file, theme=theme)
+        plt_window.show()
 
     def histogram_dt_ions(self):
         """Plot a histogram of time delta between arriving ions.
@@ -1591,8 +1589,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self.mass_cal_def_action,
             self.calculate_single_action,
             self.calculate_batch_action,
-            # todo self.special_hist_dt_ions_action,
-            # todo self.special_hist_ions_shot_action,
+            self.special_hist_dt_ions_action,
+            self.special_hist_ions_shot_action,
         ]
         if crd is not None:  # so we have a file!
             for action in crd_loaded_actions:
