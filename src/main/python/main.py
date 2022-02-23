@@ -834,6 +834,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         }
 
         default_settings_metadata = {
+            "Peak FWHM (us)": {"preferred_handler": widgets.PreciseQDoubleSpinBox},
             "Max. time dt ions histogram (ns)": {
                 "preferred_handler": widgets.LargeQSpinBox
             },
