@@ -50,6 +50,32 @@ class OpenFilesModel(QtCore.QAbstractListModel):
         self.open_files[ind][0] = True
         self.layoutChanged.emit()
 
+    def add_to_list(self, names: List[Path]) -> None:
+        """Add new items to the list at the end.
+
+        :param names: List of new file names to append.
+        """
+        for name in names:
+            self.open_files.append([False, name.with_suffix("").name])
+        self.layoutChanged.emit()
+
+    def remove_from_list(self, ids: List[int], main_id: int) -> None:
+        """Remove selected ids from the list.
+
+        :param ids: IDs to remove.
+        :param main_id: ID of the currently active one (new ID).
+        """
+        self.open_files[self._currently_active][0] = False  # unset active one
+
+        ids.sort(reverse=True)
+        for id in ids:
+            del self.open_files[id]
+
+        self.open_files[main_id][0] = True  # set new active
+        self._currently_active = main_id
+
+        self.layoutChanged.emit()
+
     def set_new_list(self, names: List[Path]) -> None:
         """Clear the old model and set the new dataset."""
         self.open_files = []

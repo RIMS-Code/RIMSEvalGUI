@@ -382,7 +382,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             QtGui.QIcon(
                 self.appctxt.get_resource("icons/blue-folder-horizontal-open.png")
             ),
-            "Open CRD",
+            "Open CRD(s)",
             self,
         )
         open_crd_action.setStatusTip("Open CRD file(s)")
@@ -390,6 +390,24 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         open_crd_action.triggered.connect(self.open_crd)
         self.file_menu.addAction(open_crd_action)
         tool_bar.addAction(open_crd_action)
+
+        open_additional_crd_action = QtGui.QAction(
+            QtGui.QIcon(None), "Open additional CRD(s)", self
+        )
+        open_additional_crd_action.setStatusTip(
+            "Add additional CRD files to the already open ones."
+        )
+        open_additional_crd_action.triggered.connect(self.open_additional_crd)
+        self.file_menu.addAction(open_additional_crd_action)
+
+        unload_crd_action = QtGui.QAction(
+            QtGui.QIcon(None), "Unload selected CRD(s)", self
+        )
+        unload_crd_action.setStatusTip(
+            "Unload selected CRD files. Currently active file cannot be unloaded."
+        )
+        unload_crd_action.triggered.connect(self.unload_selected_crd)
+        self.file_menu.addAction(unload_crd_action)
 
         load_cal_action = QtGui.QAction(
             QtGui.QIcon(None),
@@ -908,21 +926,13 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
                 self.crd_files.open_files()  # open, but no read
                 self.crd_files.peak_fwhm = self.config.get("Peak FWHM (us)")
 
-                # apply specifications if here:
-                for crd in self.crd_files.files:
-                    if (calfile := crd.fname.with_suffix(".json")).is_file():
-                        pass
-                    elif (
-                        calfile := self.app_local_path.joinpath("calibration.json")
-                    ).is_file():
-                        pass
-                    else:
-                        calfile = None
-                    if calfile:
-                        rimseval.interfacer.load_cal_file(crd, calfile)
-                        self.set_controls_from_filters()
+                self.crd_files.load_calibrations(
+                    secondary_cal=self.app_local_path.joinpath("calibration.json")
+                )
 
                 self.file_names_model.set_new_list(file_paths)
+
+                self.set_controls_from_filters()
 
                 if self.config.get("Calculate on open"):
                     self.crd_files.read_files()
@@ -935,9 +945,59 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
                 self.update_info_window(update_all=True)
         except Exception as err:
             QtWidgets.QMessageBox.warning(
-                self, "Error occured when opening files", err.args[0]
+                self, "Error occurred when opening files", err.args[0]
             )
             self.status_widget.set_status("error")
+
+    def open_additional_crd(self) -> None:
+        """Open additional CRD files."""
+        if not self.crd_files:  # No files are open
+            self.open_crd()
+            return
+
+        file_names = QtWidgets.QFileDialog.getOpenFileNames(
+            self,
+            "Open CRD File(s)",
+            str(self.user_folder),
+            "CRD Files (*.crd)",
+        )[0]
+
+        try:
+            if len(file_names) > 0:
+                file_paths = [Path(file_name) for file_name in file_names]
+
+                read_files = self.config.get("Calculate on open")
+                secondary_cal = self.app_local_path.joinpath("calibration.json")
+                self.crd_files.open_additional_files(
+                    file_paths, read_files=read_files, secondary_cal=secondary_cal
+                )
+
+                self.file_names_model.add_to_list(file_paths)
+
+        except Exception as err:
+            QtWidgets.QMessageBox.warning(
+                self, "Error occurred when opening additional files", err.args[0]
+            )
+            self.status_widget.set_status("error")
+
+    def unload_selected_crd(self):
+        """Close selected CRD files."""
+        selected_models = self.file_names_view.selectedIndexes()
+        selected_indexes = [it.row() for it in selected_models]
+        main_id = self.file_names_model.currently_active
+
+        if main_id in selected_indexes:
+            QtWidgets.QMessageBox.warning(
+                self, "Unloading failed", "Cannot unload currently active file."
+            )
+            return
+
+        selected_indexes.sort(reverse=True)
+        new_main_id = self.crd_files.close_selected_files(
+            selected_indexes, main_id=main_id
+        )
+        # now unload from file list
+        self.file_names_model.remove_from_list(selected_indexes, new_main_id)
 
     def load_calibration(self, fname: Path = None):
         """Load a specific calibration file.
