@@ -585,11 +585,11 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
         integrals_copy_all_w_fnames_action = QtGui.QAction(
             QtGui.QIcon(None),
-            "Copy All Integrals w/ file names",
+            "Copy All Integrals",
             self,
         )
         integrals_copy_all_w_fnames_action.setStatusTip(
-            "Copy all file & peak names and integrals to the clipboard (open files)"
+            "Copy all integrals of all open files to the clipboard"
         )
         integrals_copy_all_w_fnames_action.setShortcut(
             QtGui.QKeySequence("Ctrl+Shift+c")
@@ -1158,9 +1158,32 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         :param get_names: Copy names of peaks as well?
         """
         get_unc = self.config.get("Copy integrals w/ unc.")
-        QtWidgets.QApplication.clipboard().setText(
-            self.integrals_model.get_integrals_to_copy(names=get_names, unc=get_unc)
-        )
+
+        ret_str = ""
+
+        crd = self.current_crd_file
+        if (integrals := crd.integrals) is not None:
+            # header
+            if get_names:
+                ret_str += "File Name\tNum of Shots\t"
+                for it, name in enumerate(crd.def_integrals[0]):
+                    ret_str += f"{name}"
+                    if get_unc:
+                        ret_str += f"\t{name}_1sig"
+                    if it < len(crd.def_integrals[0]) - 1:
+                        ret_str += "\t"
+                ret_str += "\n"
+
+            # integrals
+            ret_str += f"{crd.fname.with_suffix('').name}\t"
+            ret_str += f"{crd.nof_shots}\t"
+            for col, val in enumerate(integrals):
+                ret_str += f"{val[0]}\t{val[1]}" if get_unc else f"{val[0]}"
+                if col < len(integrals) - 1:
+                    ret_str += "\t"
+            ret_str += "\n"
+
+        QtWidgets.QApplication.clipboard().setText(ret_str)
 
     def integrals_copy_all_to_clipboard(self):
         """Copy all integrals with the filename to the clipboard."""
@@ -1171,6 +1194,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         for crd in self.crd_files.files:
             if (integrals := crd.integrals) is not None:
                 ret_str += f"{crd.fname.with_suffix('').name}\t"
+                ret_str += f"{crd.nof_shots}\t"
                 for col, val in enumerate(integrals):
                     ret_str += f"{val[0]}\t{val[1]}" if get_unc else f"{val[0]}"
                     if col < len(integrals) - 1:
@@ -1184,7 +1208,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
         :param get_names: Copy names of peaks as well?
         """
-        data = self.current_crd_file.integrals_pkg
+        crd = self.current_crd_file
+        data = crd.integrals_pkg
         if data is None:
             QtWidgets.QMessageBox.warning(
                 self, "No data", "No package data is available"
@@ -1195,14 +1220,17 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         ret_str = ""
 
         if get_names:
-            names = self.current_crd_file.def_integrals[0]
+            names = crd.def_integrals[0]
+            ret_str += "File Name\tNum of Shots\t"
             for col, name in enumerate(names):
                 ret_str += f"{name}\t{name}_1sig" if get_unc else f"{name}"
                 if col < len(names) - 1:
                     ret_str += "\t"
             ret_str += "\n"
 
-        for row in data:
+        for it, row in enumerate(data):
+            ret_str += f"{crd.fname.with_suffix('').name}\t"
+            ret_str += f"{crd.nof_shots_pkg[it]}\t"
             for col, val in enumerate(row):
                 ret_str += f"{val[0]}\t{val[1]}" if get_unc else f"{val[0]}"
                 if col < len(row) - 1:

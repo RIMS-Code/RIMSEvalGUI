@@ -1,15 +1,8 @@
-# RIMSEvalGUI v2.0.2
+# RIMSEvalGUI v2.0.3
 
-Second version of RIMSEvalGUI based on the latest `rimseval` development version `v2.0.0.dev2`.
+Second version of RIMSEvalGUI based on the latest `rimseval` development version `v2.0.0.dev3`.
 
 Main Changes to GUI:
-- Executables are now released for Windows, macos, and Debian
-- Special functions now available:
-  - Histogram of ions per shot
-  - Histogram of time between ions for all shots with more than one ion arriving
-- Add / remove files when more than one selected is now possible
+- Integral copying is not consistent throughout all various ways of copying and includes teh filename and the number of shots.
 
-Minor Changes:
-- Precision for FWHM in settings can now be selected better
-
-Changes in `rimseval` package: see [here](https://github.com/RIMS-Code/RIMSEval/releases/tag/v2.0.0.dev1)
+Changes in `rimseval` package: see [here](https://github.com/RIMS-Code/RIMSEval/releases/tag/v2.0.0.dev3)

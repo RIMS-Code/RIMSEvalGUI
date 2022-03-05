@@ -1,2 +1,3 @@
 pyqtconfig
+pyqtdarktheme
 rimseval
