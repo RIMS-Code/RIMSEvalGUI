@@ -141,28 +141,6 @@ class IntegralsModel(QtCore.QAbstractTableModel):
         self._data = np.empty((0, 0))
         self.layoutChanged.emit()
 
-    def get_integrals_to_copy(self, names: bool = False, unc: bool = True) -> str:
-        """Get string with the data to copy to clipboard.
-
-        :param names: Copy the names of the peaks as well?
-        :param unc: Copy uncertainties as well?
-        """
-        if self._names is None:
-            return ""
-
-        ret_str = ""
-        if names:
-            for it, name in enumerate(self._names):
-                ret_str += f"{name}\t{name}_1sig" if unc else f"{name}"
-                if it < len(self._names) - 1:
-                    ret_str += "\t"
-            ret_str += "\n"
-        for it, val in enumerate(self._data):
-            ret_str += f"{val[0]}\t{val[1]}" if unc else f"{val[0]}"
-            if it < len(self._data) - 1:
-                ret_str += "\t"
-        return ret_str
-
     def update_data(self, data: np.ndarray, names: List[str]):
         """Update the model with new data.
 
