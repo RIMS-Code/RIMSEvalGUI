@@ -89,19 +89,22 @@ class OpenFilesModel(QtCore.QAbstractListModel):
 class IntegralsModel(QtCore.QAbstractTableModel):
     """Data model for integrals."""
 
-    def __init__(self, data=None, names=None):
+    def __init__(self, data=None, names=None, deltas=None):
         """Initialize the integral model.
 
         :param data: Integrals, from ``CRDProcessor.integrals``.
         """
         super().__init__()
         self._names = names
-        self._header = ["Peak", "Counts", "Uncertainty"]
+        self._header = ["Peak", "Counts", "\u00B11\u03C3", "Delta", "\u00B11\u03C3"]
 
         if data is None:
-            self._data = np.zeros((0, 0))
+            self._data = np.zeros((0, 0, 0, 0))
         else:
-            self._data = data
+            if deltas is None:
+                deltas = np.zeros_lie(self._data)
+            self._data = np.stack([data, deltas], axis=1)
+            self._data.reshape(self._data.shape[0], 4)
 
     def columnCount(self, index):
         """Return the number of columns."""
@@ -138,17 +141,19 @@ class IntegralsModel(QtCore.QAbstractTableModel):
     def clear_data(self):
         """Clear data."""
         self._names = None
-        self._data = np.empty((0, 0))
+        self._data = np.empty((0, 0, 0, 0))
         self.layoutChanged.emit()
 
-    def update_data(self, data: np.ndarray, names: List[str]):
+    def update_data(self, data: np.ndarray, names: List[str], deltas: np.ndarray):
         """Update the model with new data.
 
         :param data: Data to set
         :param names: Names of the peaks
+        :param deltas: Delta value to set.
         """
         self._names = names
-        self._data = data
+        data = np.stack([data, deltas], axis=1)
+        self._data = data.reshape(data.shape[0], 4)
         self.layoutChanged.emit()
 
 

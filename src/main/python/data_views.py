@@ -48,7 +48,7 @@ class IntegralsDisplay(QtWidgets.QTableView):
         :param parent: Parent widget.
         """
         super().__init__(parent)
-        self.setMinimumWidth(400)
+        self.setMinimumWidth(530)
         self.setSizeAdjustPolicy(
             QtWidgets.QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents
         )

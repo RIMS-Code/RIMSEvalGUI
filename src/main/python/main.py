@@ -1298,11 +1298,13 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
                 and self.current_crd_file.def_backgrounds is not None
             )
             self.current_crd_file.integrals_calc(bg_corr=bg_corr)
+            self.current_crd_file.integrals_calc_delta()
 
             # update integral model
             self.integrals_model.update_data(
                 data=self.current_crd_file.integrals,
                 names=self.current_crd_file.def_integrals[0],
+                deltas=self.current_crd_file.integrals_delta,
             )
 
         # save calibration file
@@ -1772,6 +1774,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self.integrals_model.update_data(
                 self.current_crd_file.integrals,
                 self.current_crd_file.def_integrals[0],
+                self.current_crd_file.integrals_delta,
             )
 
     def update_plot_window(self) -> None:
