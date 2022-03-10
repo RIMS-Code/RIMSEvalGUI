@@ -1,11 +1,11 @@
-name: Release MacOS
+name: Release Ubuntu
 
-on: [push, pull_request]
+on: [pull_request]
 
 jobs:
   build:
-    name: Test MacOS Packaging
-    runs-on: ubuntu-18.04
+    name: Test Ubuntu Packaging
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: [3.9]
