@@ -845,6 +845,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             "Plot with log y-axis": True,
             "Calculate on open": True,
             "Optimize Mass Calibration": True,
+            "Auto sort integrals": True,
             "Signal Channel": 1,
             "Tag Channel": 2,
             "Peak FWHM (us)": 0.02,
@@ -1148,6 +1149,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         dialog = IntegralEditDialog(model, parent=self)
         if dialog.exec():
             self.current_crd_file.def_integrals = model.return_data()
+            if self.config.get("Auto sort integrals"):
+                self.current_crd_file.sort_integrals(sort_vals=False)
             self.update_all()
 
             self.status_widget.set_status("outdated")
