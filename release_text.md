@@ -1,10 +1,9 @@
-# RIMSEvalGUI v2.0.4
+# RIMSEvalGUI v2.0.5
 
-Third version of RIMSEvalGUI based on the latest `rimseval` development version `v2.0.0.dev3`.
+RIMSEvalGUI release based on the latest `rimseval` development version `v2.0.0.dev3`.
 
 Main Changes to GUI:
-- Add `Ctrl + Shift + r` as shortcut for batch calculate
-- Increase precision of filters when setting ToF windows
-- Allow to filter to zero ions per tof window
+- When opening new files, file names are sorted
+- 
 
 Changes in `rimseval` package since last version: see [here](https://github.com/RIMS-Code/RIMSEval/releases/tag/v2.0.0.dev3)

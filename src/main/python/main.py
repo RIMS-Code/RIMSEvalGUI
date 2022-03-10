@@ -910,6 +910,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
         try:
             if len(file_names) > 0:
+                file_names.sort()
+
                 self.status_widget.set_status("outdated")
                 # close files and remove from memory if they exist
                 if self.crd_files:
