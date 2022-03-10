@@ -1,14 +1,14 @@
 name: Release Multi OS
 
-on: [pull_request]
-#  push:
-#    # Sequence of patterns matched against refs/tags
-#    tags:
-#    - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+on:
+  push:
+    # Sequence of patterns matched against refs/tags
+    tags:
+    - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
 
 jobs:
   build-windows:
-    name: Window packaging / release creation
+    name: Window packaging and release creation
     runs-on: windows-latest
     strategy:
       matrix:
@@ -37,8 +37,7 @@ jobs:
         with:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref }}
-          # body: ""  # release message, alternative to body_path
-          body_path: release_text.md  # uncomment if not used
+          body_path: release_text.md
           draft: false
           prerelease: false
       - name: Upload Release Asset
@@ -114,7 +113,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: target/fbs_tutorial_appSetup.exe
-          asset_name: fbs_tutorial_appSetup.exe
+          file: target/RIMSEvaluationSetup.exe
+          asset_name: RIMSEvaluationSetup.exe
           tag: ${{ github.ref }}
           overwrite: true
