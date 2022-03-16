@@ -1271,7 +1271,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.tmp_window.signal_backgrounds_defined.connect(self.update_all)
         self.tmp_window.show()
 
-        if self.control_bg_correction[0].isChecked():
+        if self.control_bg_correction.isChecked():
             self.status_widget.set_status("outdated")
 
     def backgrounds_set_edit(self):
@@ -1284,7 +1284,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self.current_crd_file.def_backgrounds = model.return_data()
             self.update_all()
 
-            if self.control_bg_correction[0].isChecked():
+            if self.control_bg_correction.isChecked():
                 self.status_widget.set_status("outdated")
 
     # CALCULATE FUNCTIONS #
