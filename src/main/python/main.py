@@ -850,6 +850,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             "Tag Channel": 2,
             "Peak FWHM (us)": 0.02,
             "Copy integrals w/ unc.": True,
+            "Copy timestamp with integrals": False,
             "Bins for spectra export": 10,
             "Max. time dt ions histogram (ns)": 120,
             "Theme": "light",
@@ -1167,6 +1168,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         :param get_names: Copy names of peaks as well?
         """
         get_unc = self.config.get("Copy integrals w/ unc.")
+        cp_timestamp = self.config.get("Copy timestamp with integrals")
 
         ret_str = ""
 
@@ -1175,6 +1177,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             # header
             if get_names:
                 ret_str += "File Name\tNum of Shots\t"
+                if cp_timestamp:
+                    ret_str += "Time\t"
                 for it, name in enumerate(crd.def_integrals[0]):
                     ret_str += f"{name}"
                     if get_unc:
@@ -1186,6 +1190,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             # integrals
             ret_str += f"{crd.fname.with_suffix('').name}\t"
             ret_str += f"{crd.nof_shots}\t"
+            if cp_timestamp:
+                ret_str += f"{crd.timestamp}\t"
             for col, val in enumerate(integrals):
                 ret_str += f"{val[0]}\t{val[1]}" if get_unc else f"{val[0]}"
                 if col < len(integrals) - 1:
@@ -1197,6 +1203,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
     def integrals_copy_all_to_clipboard(self):
         """Copy all integrals with the filename to the clipboard."""
         get_unc = self.config.get("Copy integrals w/ unc.")
+        cp_timestamp = self.config.get("Copy timestamp with integrals")
 
         ret_str = ""
 
@@ -1204,6 +1211,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             if (integrals := crd.integrals) is not None:
                 ret_str += f"{crd.fname.with_suffix('').name}\t"
                 ret_str += f"{crd.nof_shots}\t"
+                if cp_timestamp:
+                    ret_str += f"{crd.timestamp}\t"
                 for col, val in enumerate(integrals):
                     ret_str += f"{val[0]}\t{val[1]}" if get_unc else f"{val[0]}"
                     if col < len(integrals) - 1:
@@ -1226,11 +1235,14 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             return
 
         get_unc = self.config.get("Copy integrals w/ unc.")
+        cp_timestamp = self.config.get("Copy timestamp with integrals")
         ret_str = ""
 
         if get_names:
             names = crd.def_integrals[0]
             ret_str += "File Name\tNum of Shots\t"
+            if cp_timestamp:
+                ret_str += "Time\t"
             for col, name in enumerate(names):
                 ret_str += f"{name}\t{name}_1sig" if get_unc else f"{name}"
                 if col < len(names) - 1:
@@ -1240,6 +1252,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         for it, row in enumerate(data):
             ret_str += f"{crd.fname.with_suffix('').name}\t"
             ret_str += f"{crd.nof_shots_pkg[it]}\t"
+            if cp_timestamp:
+                ret_str += f"{crd.timestamp}\t"
             for col, val in enumerate(row):
                 ret_str += f"{val[0]}\t{val[1]}" if get_unc else f"{val[0]}"
                 if col < len(row) - 1:
