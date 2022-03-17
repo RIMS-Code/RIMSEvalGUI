@@ -4,5 +4,6 @@ RIMSEvalGUI release based on the latest `rimseval` development version `v2.0.0.d
 
 **Main Changes to GUI:**
 - Allow user to copy time stamp of CRD file along with integrals (see settings)
+- Add special plots to graph the counts per integral versus the package number (if data is packaged)
 
 Changes in `rimseval` package since last version: see [here](https://github.com/RIMS-Code/RIMSEval/releases/tag/v2.0.0.dev5).

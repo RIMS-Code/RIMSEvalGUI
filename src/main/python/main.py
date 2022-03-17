@@ -105,6 +105,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.calculate_batch_action = None
         self.export_mass_spectrum_action = None
         self.export_tof_spectrum_action = None
+        self.special_integrals_per_pkg_action = None
         self.special_hist_dt_ions_action = None
         self.special_hist_ions_shot_action = None
         self.window_elements_action = None
@@ -734,6 +735,18 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.export_tof_spectrum_action = export_tof_spectrum_action
 
         # SPECIAL ACTIONS #
+
+        special_integrals_per_pkg_action = QtGui.QAction(
+            QtGui.QIcon(None),
+            "Plot integrals per package",
+            self,
+        )
+        special_integrals_per_pkg_action.setStatusTip(
+            "Show a plot of all integrals per package."
+        )
+        special_integrals_per_pkg_action.triggered.connect(self.plot_integrals_per_pkg)
+        self.special_menu.addAction(special_integrals_per_pkg_action)
+        self.special_integrals_per_pkg_action = special_integrals_per_pkg_action
 
         special_hist_ions_shot_action = QtGui.QAction(
             QtGui.QIcon(None),
@@ -1449,6 +1462,15 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         )
         self.tmp_window.show()
 
+    def plot_integrals_per_pkg(self):
+        """Plot all integrals per pkg versus the package number."""
+        theme = self.config.get("Theme")
+
+        self.tmp_window = rimseval.guis.plots.IntegralsPerPackage(
+            self.current_crd_file, theme=theme
+        )
+        self.tmp_window.show()
+
     # VIEW FUNCTIONS #
 
     def window_elements(self):
@@ -1706,6 +1728,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self.calculate_batch_action,
             self.export_mass_spectrum_action,
             self.export_tof_spectrum_action,
+            self.special_integrals_per_pkg_action,
             self.special_hist_dt_ions_action,
             self.special_hist_ions_shot_action,
         ]
@@ -1766,6 +1789,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
                 action.setEnabled(True)
 
         integrals_pkg_actions = [
+            self.special_integrals_per_pkg_action,
             self.integrals_copy_pkg_action,
             self.integrals_copy_pkg_w_names_action,
         ]
