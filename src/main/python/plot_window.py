@@ -90,6 +90,7 @@ class PlotWindow(QtWidgets.QMainWindow):
         )
         ax_autoscale_button.setCheckable(True)
         ax_autoscale_button.setChecked(True)  # turn it on
+        ax_autoscale_button.clicked.connect(self.toggle_autoscale)
         self.button_bar.addWidget(ax_autoscale_button)
         self.ax_autoscale_button = ax_autoscale_button
 
@@ -225,6 +226,12 @@ class PlotWindow(QtWidgets.QMainWindow):
             self.axes.set_xlim(xax_lims)
             self.axes.set_ylim(yax_lims)
 
+            self.sc.draw()
+
+    def toggle_autoscale(self) -> None:
+        """Run autoscale on current axis if autoscale is turned on by user."""
+        if self.ax_autoscale_button.isChecked():
+            self.axes.autoscale()
             self.sc.draw()
 
     def toggle_integrals(self) -> None:
