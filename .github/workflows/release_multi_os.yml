@@ -52,6 +52,7 @@ jobs:
           asset_content_type: application/exe
 
   build-macos:
+    needs: build-windows
     name: MacOS Packaging
     runs-on: macos-latest
     strategy:
@@ -83,6 +84,7 @@ jobs:
           overwrite: true
 
   build-ubuntu:
+    needs: build-windows
     name: Ubuntu Packaging
     runs-on: ubuntu-20.04
     strategy:
@@ -113,7 +115,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: target/RIMSEvaluationSetup.exe
-          asset_name: RIMSEvaluationSetup.exe
+          file: target/RIMSEvaluationSetup.deb
+          asset_name: RIMSEvaluationSetup.deb
           tag: ${{ github.ref }}
           overwrite: true
