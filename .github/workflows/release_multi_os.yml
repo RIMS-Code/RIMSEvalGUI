@@ -115,7 +115,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: target/RIMSEvaluationSetup.deb
-          asset_name: RIMSEvaluationSetup.deb
+          file: target/RIMSEvaluation.deb
+          asset_name: RIMSEvaluation.deb
           tag: ${{ github.ref }}
           overwrite: true
