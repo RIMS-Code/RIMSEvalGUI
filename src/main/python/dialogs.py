@@ -2,11 +2,12 @@
 
 from typing import List
 
+from iniabu.utilities import item_formatter
 from PyQt6 import QtGui, QtWidgets
 import numpy as np
 from rimseval.utilities import ini
 
-from data_models import IntegralBackgroundDefinitionModel
+from data_models import IntegralBackgroundDefinitionModel, NormIsosModel
 from data_views import IntegralBackgroundTableView
 
 
@@ -348,3 +349,138 @@ class MassCalDialog(QtWidgets.QDialog):
             tmp_hbox.addWidget(QtWidgets.QLabel(f"{tm:.3f}"))
             tmp_hbox.addWidget(QtWidgets.QLabel(f"{ms:.3f}"))
             self.layout.addLayout(tmp_hbox)
+
+
+class NormIsosDialog(QtWidgets.QDialog):
+    """Set / Edit normalization isotopes dialog."""
+
+    def __init__(self, model: NormIsosModel, data: dict = {}, parent=None):
+        """Initialize the dialog
+
+        :param model: Model to set to ``EditableTableView``
+        :param data: List of existing elements.
+        :param parent: Parent widget
+        """
+        super().__init__(parent)
+
+        self.data = data
+
+        self.setWindowTitle("Set / Edit Normalization Isotopes")
+
+        self.add_ele = QtWidgets.QLineEdit()
+        self.add_iso = QtWidgets.QLineEdit()
+
+        self.table_edit = IntegralBackgroundTableView()
+        self.model = model
+        self.table_edit.setModel(self.model)
+
+        self.init_ui()
+
+    def init_ui(self):
+        """Initialize the dialog."""
+        layout = QtWidgets.QVBoxLayout()
+
+        layout.addWidget(self.table_edit)
+
+        self.add_ele.setMaximumWidth(100)
+        self.add_ele.setToolTip("Element name, e.g., 'Ba'.")
+        self.add_iso.setMaximumWidth(100)
+        self.add_iso.setToolTip("Normalizing isotope name, e.g., 'Ba-136'")
+
+        edit_hbox = QtWidgets.QHBoxLayout()
+        edit_hbox.addWidget(self.add_ele)
+        edit_hbox.addStretch()
+        edit_hbox.addWidget(self.add_iso)
+        layout.addLayout(edit_hbox)
+        add_button = QtWidgets.QPushButton("Add new entry")
+        add_button.clicked.connect(self.add_new_entry)
+        layout.addWidget(add_button)
+
+        clear_all_button = QtWidgets.QPushButton("Clear All")
+        clear_all_button.clicked.connect(self.clear_all)
+        clear_selected_button = QtWidgets.QPushButton("Delete Selected")
+        clear_selected_button.clicked.connect(self.delete_selected)
+        tmp_layout = QtWidgets.QHBoxLayout()
+        tmp_layout.addStretch()
+        tmp_layout.addWidget(clear_all_button)
+        tmp_layout.addWidget(clear_selected_button)
+        layout.addLayout(tmp_layout)
+
+        button_box = QtWidgets.QDialogButtonBox(
+            QtWidgets.QDialogButtonBox.StandardButton.Cancel
+            | QtWidgets.QDialogButtonBox.StandardButton.Ok
+        )
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+
+        layout.addWidget(button_box)
+        self.setLayout(layout)
+
+    def add_new_entry(self):
+        """Add a new entry to the model."""
+        ele = self.add_ele.text()
+        iso = self.add_iso.text()
+
+        if ele == "" or iso == "":
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Add entries",
+                "Please fill out the element and isotope fields above.",
+            )
+            return None
+
+        try:
+            ele = item_formatter(ele)
+            iso = item_formatter(iso)
+        except Exception as err:
+            QtWidgets.QMessageBox.warning(
+                self, "Error occurred when parsing element / isotope name", err.args[0]
+            )
+
+        if "-" in ele:
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Please select an element",
+                "Please select an element for the parent (left entry), not an isotope.",
+            )
+            return None
+
+        # try valid element
+        try:
+            _ = ini.ele[ele]
+        except IndexError:
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Element invalid",
+                "Please select a valid element in its short form, e.g., Ba.",
+            )
+            return None
+
+        # try valid isotope
+        try:
+            _ = ini.iso[iso]
+        except IndexError:
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Isotope invalid",
+                "Please select a valid isotope in its short form, e.g., Ba-136.",
+            )
+            return None
+
+        self.model.add_entry(ele, iso)
+        self.add_ele.setText("")
+        self.add_iso.setText("")
+
+    def delete_selected(self):
+        """Add a row to the data."""
+        selected_indexes = self.table_edit.selectedIndexes()
+        rows = set()
+        for ind in selected_indexes:
+            rows.add(ind.row())
+
+        if len(rows) > 0:
+            self.model.delete_selected(list(rows))
+
+    def clear_all(self):
+        """Clear all data and add 10 empty rows."""
+        self.model.init_empty()

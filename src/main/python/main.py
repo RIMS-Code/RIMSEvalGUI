@@ -17,14 +17,22 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 from pyqtconfig import ConfigDialog, ConfigManager
 import qdarktheme
 import rimseval
+from rimseval.utilities import ini
 
 from data_models import (
     IntegralsModel,
     IntegralBackgroundDefinitionModel,
     OpenFilesModel,
+    NormIsosModel,
 )
 from data_views import IntegralsDisplay, OpenFilesListView
-from dialogs import AboutDialog, BackgroundEditDialog, IntegralEditDialog, MassCalDialog
+from dialogs import (
+    AboutDialog,
+    BackgroundEditDialog,
+    IntegralEditDialog,
+    MassCalDialog,
+    NormIsosDialog,
+)
 from elements import PeriodicTable
 from info_window import FileInfoWindow
 from plot_window import PlotWindow
@@ -815,6 +823,13 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
         # SETTINGS ACTIONS #
 
+        norm_isos_action = QtGui.QAction(
+            QtGui.QIcon(None), "Normalizing Isotopes", self
+        )
+        norm_isos_action.setStatusTip("Set / edit normalization isotopes per element")
+        norm_isos_action.triggered.connect(self.normalizing_isotopes_dialog)
+        self.settings_menu.addAction(norm_isos_action)
+
         settings_action = QtGui.QAction(
             QtGui.QIcon(self.appctxt.get_resource("icons/gear.png")),
             "Settings",
@@ -868,6 +883,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             "Max. time dt ions histogram (ns)": 120,
             "Theme": "light",
             "User folder": str(Path.home()),
+            "Norm isos": {},
         }
 
         default_settings_metadata = {
@@ -880,6 +896,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
                 "preferred_map_dict": {"Dark Colors": "dark", "Light Colors": "light"},
             },
             "User folder": {"prefer_hidden": True},
+            "Norm isos": {"prefer_hidden": True},
         }
 
         self.config = ConfigManager(
@@ -887,6 +904,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         )
         self.config.set_many_metadata(default_settings_metadata)
         self.user_folder = Path(self.config.get("User folder"))
+        ini.norm_isos = self.config.get("Norm isos")
 
     # PROPERTIES #
 
@@ -1501,6 +1519,18 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.config.save()
 
         self.setStyleSheet(qdarktheme.load_stylesheet(self.config.get("Theme")))
+
+    def normalizing_isotopes_dialog(self):
+        """Bring up dialog to set / edit normalizing isotopes with ini."""
+        model = NormIsosModel(ini.norm_isos)
+        dialog = NormIsosDialog(model, parent=self)
+        if dialog.exec():
+            ini.reset_norm_isos()
+            norm_isos = model.return_data()
+            ini.norm_isos = norm_isos
+            self.config.set("Norm isos", norm_isos)
+            self.config.save()
+            self.status_widget.set_status("outdated")
 
     def window_settings(self):
         """Settings Dialog."""
