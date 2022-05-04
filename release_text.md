@@ -1,9 +1,8 @@
-# RIMSEvalGUI v2.0.6
+# RIMSEvalGUI v2.0.7
 
-RIMSEvalGUI release based on the latest `rimseval` development version `v2.0.0.dev5`.
+RIMSEvalGUI release based on the latest `rimseval` development version `v2.0.0.dev6`.
 
 **Main Changes to GUI:**
-- Allow user to copy time stamp of CRD file along with integrals (see settings)
-- Add special plots to graph the counts per integral versus the package number (if data is packaged)
+- Allow user to select normalization isotopes.
 
-Changes in `rimseval` package since last version: see [here](https://github.com/RIMS-Code/RIMSEval/releases/tag/v2.0.0.dev5).
+Changes in `rimseval` package since last version: see [here](https://github.com/RIMS-Code/RIMSEval/releases/tag/v2.0.0.dev6).
