@@ -87,7 +87,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.lst_menu = menu_bar.addMenu("&LST Files")
         self.export_menu = menu_bar.addMenu("&Export")
         self.special_menu = menu_bar.addMenu("&Special")
-        self.view_menu = menu_bar.addMenu(("&View"))
+        self.view_menu = menu_bar.addMenu("&View")
         self.settings_menu = menu_bar.addMenu("Settings")
 
         # actions

@@ -1,6 +1,6 @@
 """PyQt Widget - Statusindicator
 
-PyQt class to implement a Status Indicator function as an object. The status indicator 
+PyQt class to implement a Status Indicator function as an object. The status indicator
 inherits all attributes from QWidget and can be used like a regular widget.
 
 Example in a given PyQt6 program:
