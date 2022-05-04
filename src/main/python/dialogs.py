@@ -382,13 +382,15 @@ class NormIsosDialog(QtWidgets.QDialog):
 
         layout.addWidget(self.table_edit)
 
-        self.add_ele.setMaximumWidth(100)
+        self.add_ele.setFixedWidth(120)
         self.add_ele.setToolTip("Element name, e.g., 'Ba'.")
-        self.add_iso.setMaximumWidth(100)
+        self.add_iso.setFixedWidth(120)
         self.add_iso.setToolTip("Normalizing isotope name, e.g., 'Ba-136'")
 
         edit_hbox = QtWidgets.QHBoxLayout()
         edit_hbox.addWidget(self.add_ele)
+        edit_hbox.addStretch()
+        edit_hbox.addWidget(QtWidgets.QLabel(":"))
         edit_hbox.addStretch()
         edit_hbox.addWidget(self.add_iso)
         layout.addLayout(edit_hbox)
@@ -407,9 +409,11 @@ class NormIsosDialog(QtWidgets.QDialog):
         layout.addLayout(tmp_layout)
 
         button_box = QtWidgets.QDialogButtonBox(
-            QtWidgets.QDialogButtonBox.StandardButton.Cancel
+            QtWidgets.QDialogButtonBox.StandardButton.Help
+            | QtWidgets.QDialogButtonBox.StandardButton.Cancel
             | QtWidgets.QDialogButtonBox.StandardButton.Ok
         )
+        button_box.helpRequested.connect(self.help)
         button_box.accepted.connect(self.accept)
         button_box.rejected.connect(self.reject)
 
@@ -471,6 +475,10 @@ class NormIsosDialog(QtWidgets.QDialog):
         self.add_ele.setText("")
         self.add_iso.setText("")
 
+    def clear_all(self):
+        """Clear all data and add 10 empty rows."""
+        self.model.init_empty()
+
     def delete_selected(self):
         """Add a row to the data."""
         selected_indexes = self.table_edit.selectedIndexes()
@@ -481,6 +489,12 @@ class NormIsosDialog(QtWidgets.QDialog):
         if len(rows) > 0:
             self.model.delete_selected(list(rows))
 
-    def clear_all(self):
-        """Clear all data and add 10 empty rows."""
-        self.model.init_empty()
+    def help(self):
+        """Display a help / info dialog."""
+        QtWidgets.QMessageBox.information(
+            self,
+            "Information",
+            "Please select the element and requested normalizing isotope. If no "
+            "normalizing isotope is selected, the program will automatically use "
+            "the most abundant one as the normalizing isotope of a given element.",
+        )
