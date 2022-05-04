@@ -287,3 +287,75 @@ class IntegralBackgroundDefinitionModel(QtCore.QAbstractTableModel):
         self.remove_empties()
         if self._names:
             return self._names, self._values
+
+
+class NormIsosModel(QtCore.QAbstractTableModel):
+    """Data model for normalization isotopes dictionary."""
+
+    def __init__(self, data=None):
+        """Initialize the normalization isotopes model.
+
+        :param data: Dictionary with elements as keys and isotopes as values, e.g.:
+            {"Ba": "Ba-136"}, or None
+        """
+        super().__init__()
+        self._header = ["Element", "Isotope"]
+
+        if data is None:
+            self.init_empty()
+        else:
+            self._data = data
+            self._keys = list(self._data.keys())
+
+    def add_entry(self, ele: str, iso: str) -> None:
+        """Add a new element / isotope combination and change the layout.
+
+        :param ele: Element name.
+        :param iso: Isotope name.
+        """
+        self._data[ele] = iso
+        self._keys = list(self._data.keys())
+        self.layoutChanged.emit()
+
+    def columnCount(self, index):
+        """Return the number of columns."""
+        return 2
+
+    def data(self, index, role):
+        """Return the data."""
+        row = index.row()
+        col = index.column()
+        key = self._keys[row]
+
+        if role == QtCore.Qt.ItemDataRole.DisplayRole:
+            if col == 0:
+                return key
+            else:
+                return self._data[key]
+
+    def delete_selected(self, rows: List):
+        """Delete all entries that are selected."""
+        for ind in rows:
+            del self._data[self._keys[ind]]
+        self._keys = list(self._data.keys())
+        self.layoutChanged.emit()
+
+    def headerData(self, section, orientation, role):
+        # section is the index of the column/row.
+        if role == QtCore.Qt.ItemDataRole.DisplayRole:
+            if orientation == QtCore.Qt.Orientation.Horizontal:
+                return str(self._header[section])
+
+    def init_empty(self):
+        """Initialize empty model."""
+        self._data = {}
+        self._keys = []
+        self.layoutChanged.emit()
+
+    def return_data(self) -> dict:
+        """Return the dictionary with all data."""
+        return self._data
+
+    def rowCount(self, index):
+        """Return the number of rows."""
+        return len(self._keys)
