@@ -17,6 +17,7 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 from pyqtconfig import ConfigDialog, ConfigManager
 import qdarktheme
 import rimseval
+from rimseval.data_io import excel_writer
 from rimseval.utilities import ini
 
 from data_models import (
@@ -113,6 +114,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.calculate_batch_action = None
         self.export_mass_spectrum_action = None
         self.export_tof_spectrum_action = None
+        self.special_excel_workup_file_action = None
         self.special_integrals_per_pkg_action = None
         self.special_hist_dt_ions_action = None
         self.special_hist_ions_shot_action = None
@@ -743,6 +745,18 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.export_tof_spectrum_action = export_tof_spectrum_action
 
         # SPECIAL ACTIONS #
+        special_excel_workup_file_action = QtGui.QAction(
+            QtGui.QIcon(None),
+            "Create Excel Workup File",
+            self,
+        )
+        special_excel_workup_file_action.setStatusTip(
+            "Create a workup Excel file with current specifications."
+        )
+        special_excel_workup_file_action.triggered.connect(self.create_excel_workup)
+        self.special_menu.addAction(special_excel_workup_file_action)
+        self.special_menu.addSeparator()
+        self.special_excel_workup_file_action = special_excel_workup_file_action
 
         special_integrals_per_pkg_action = QtGui.QAction(
             QtGui.QIcon(None),
@@ -1459,6 +1473,21 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
     # SPECIAL FUNCTIONS #
 
+    def create_excel_workup(self) -> None:
+        """Create an excel workup file."""
+        query = QtWidgets.QFileDialog.getSaveFileName(
+            self,
+            caption="Save Excel Workup file as",
+            directory=str(self.user_folder),
+            filter="Excel Files (*.xlsx)",
+        )
+        if query[0]:
+            fname = Path(query[0]).with_suffix(".xlsx")
+            timestamp = self.config.get("Copy timestamp with integrals")
+            excel_writer.workup_file_writer(
+                self.current_crd_file, fname, timestamp=timestamp
+            )
+
     def histogram_ions_per_shot(self):
         """Plot a histogram of ions per shot."""
         theme = self.config.get("Theme")
@@ -1758,6 +1787,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self.calculate_batch_action,
             self.export_mass_spectrum_action,
             self.export_tof_spectrum_action,
+            self.special_excel_workup_file_action,
             self.special_integrals_per_pkg_action,
             self.special_hist_dt_ions_action,
             self.special_hist_ions_shot_action,
@@ -1813,6 +1843,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self.integrals_copy_action,
             self.integrals_copy_w_names_action,
             self.integrals_copy_all_w_fnames_action,
+            self.special_excel_workup_file_action,
         ]
         if crd.integrals is not None:
             for action in integrals_available_actions:
