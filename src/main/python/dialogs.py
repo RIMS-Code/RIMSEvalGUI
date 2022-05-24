@@ -126,11 +126,14 @@ class BackgroundEditDialog(QtWidgets.QDialog):
 
         clear_all_button = QtWidgets.QPushButton("Clear All")
         clear_all_button.clicked.connect(self.clear_all)
+        delete_selected_button = QtWidgets.QPushButton("Delete Selected")
+        delete_selected_button.clicked.connect(self.delete_selected)
         add_row_button = QtWidgets.QPushButton("Add Row")
         add_row_button.clicked.connect(self.add_row)
         tmp_layout = QtWidgets.QHBoxLayout()
         tmp_layout.addStretch()
         tmp_layout.addWidget(clear_all_button)
+        tmp_layout.addWidget(delete_selected_button)
         tmp_layout.addWidget(add_row_button)
         layout.addLayout(tmp_layout)
 
@@ -157,6 +160,7 @@ class BackgroundEditDialog(QtWidgets.QDialog):
                     f"{name} is not in the peak list. Valid peaks are:\n"
                     f"{peak_list_str}",
                 )
+                return
         super().accept()
 
     def add_row(self):
@@ -166,6 +170,16 @@ class BackgroundEditDialog(QtWidgets.QDialog):
     def clear_all(self):
         """Clear all data and add 10 empty rows."""
         self.model.init_empty()
+
+    def delete_selected(self):
+        """Delete selected rows."""
+        selected_indexes = self.table_edit.selectedIndexes()
+        rows = set()
+        for ind in selected_indexes:
+            rows.add(ind.row())
+
+        if len(rows) > 0:
+            self.model.delete_selected(list(rows))
 
 
 class IntegralEditDialog(QtWidgets.QDialog):
@@ -232,11 +246,14 @@ class IntegralEditDialog(QtWidgets.QDialog):
 
         clear_all_button = QtWidgets.QPushButton("Clear All")
         clear_all_button.clicked.connect(self.clear_all)
+        delete_selected_button = QtWidgets.QPushButton("Delete Selected")
+        delete_selected_button.clicked.connect(self.delete_selected)
         add_row_button = QtWidgets.QPushButton("Add Row")
         add_row_button.clicked.connect(self.add_row)
         tmp_layout = QtWidgets.QHBoxLayout()
         tmp_layout.addStretch()
         tmp_layout.addWidget(clear_all_button)
+        tmp_layout.addWidget(delete_selected_button)
         tmp_layout.addWidget(add_row_button)
         layout.addLayout(tmp_layout)
 
@@ -307,6 +324,16 @@ class IntegralEditDialog(QtWidgets.QDialog):
     def clear_all(self):
         """Clear all data and add 10 empty rows."""
         self.model.init_empty()
+
+    def delete_selected(self):
+        """Delete selected rows."""
+        selected_indexes = self.table_edit.selectedIndexes()
+        rows = set()
+        for ind in selected_indexes:
+            rows.add(ind.row())
+
+        if len(rows) > 0:
+            self.model.delete_selected(list(rows))
 
 
 class MassCalDialog(QtWidgets.QDialog):
@@ -480,7 +507,7 @@ class NormIsosDialog(QtWidgets.QDialog):
         self.model.init_empty()
 
     def delete_selected(self):
-        """Add a row to the data."""
+        """Delete selected rows."""
         selected_indexes = self.table_edit.selectedIndexes()
         rows = set()
         for ind in selected_indexes:

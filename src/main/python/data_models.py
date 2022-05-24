@@ -186,6 +186,14 @@ class IntegralBackgroundDefinitionModel(QtCore.QAbstractTableModel):
                 value = np.round(self._values[index.row()][index.column() - 1], 5)
             return str(value)
 
+    def delete_selected(self, rows: List):
+        """Remove names for selected entries and then call the remove empties method."""
+        for ind in rows:
+            self._names[ind] = ""
+        self.remove_empties()
+        if len(self._names) == 0:
+            self.init_empty()
+
     def flags(self, index):
         """Make all items editable."""
         return (
