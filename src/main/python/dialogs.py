@@ -3,7 +3,7 @@
 from typing import List
 
 from iniabu.utilities import item_formatter
-from PyQt6 import QtGui, QtWidgets
+from PyQt6 import QtCore, QtGui, QtWidgets
 import numpy as np
 from rimseval.utilities import ini
 
@@ -39,21 +39,21 @@ class AboutDialog(QtWidgets.QDialog):
 
         docs = QtWidgets.QLabel(
             f"Documentation can be found at:<br>"
-            f"{self.html_url('https://rimseval.readthedocs.io')}"
+            f"{html_url('https://rimseval.readthedocs.io', theme=self.theme)}"
         )
         docs.setOpenExternalLinks(True)
         layout.addWidget(docs)
 
         repo1 = QtWidgets.QLabel(
             f"GitHub repository for <code>rimseval</code> package<br>"
-            f"{self.html_url('https://github.com/RIMS-Code/RIMSEval')}"
+            f"{html_url('https://github.com/RIMS-Code/RIMSEval', theme=self.theme)}"
         )
         repo1.setOpenExternalLinks(True)
         layout.addWidget(repo1)
 
         repo2 = QtWidgets.QLabel(
             f"GitHub repository for the GUI<br>"
-            f"{self.html_url('https://github.com/RIMS-Code/RIMSEvalGUI')}"
+            f"{html_url('https://github.com/RIMS-Code/RIMSEvalGUI', theme=self.theme)}"
         )
         repo2.setOpenExternalLinks(True)
         layout.addWidget(repo2)
@@ -76,22 +76,6 @@ class AboutDialog(QtWidgets.QDialog):
         layout.addWidget(button_box)
 
         self.setLayout(layout)
-
-    def html_url(self, url: str, name: str = None) -> str:
-        """Create a HTML string for the URL and return it.
-
-        :param url: URL to set
-        :param name: Name of the URL, if None, use same as URL.
-        """
-        if self.theme == "dark":
-            color = "#988fd4"
-        else:
-            color = "#1501a3"
-
-        if name is None:
-            name = url
-        retval = f'<a href="{url}" style="color:{color}">{name}</a>'
-        return retval
 
 
 class BackgroundEditDialog(QtWidgets.QDialog):
@@ -180,6 +164,99 @@ class BackgroundEditDialog(QtWidgets.QDialog):
 
         if len(rows) > 0:
             self.model.delete_selected(list(rows))
+
+
+class CheckForUpdatesDialog(QtWidgets.QDialog):
+    """Dialog that displays if updates are available or not."""
+
+    def __init__(
+        self,
+        parent=None,
+        curr_version: str = None,
+        latest_version: str = None,
+        status: int = None,
+    ):
+        """Initialize the class.
+
+        :param parent: Parent widget
+        :param curr_version: Current version of the GUI
+        :param latest_version: Latest version available on GitHub
+        :param status: Status indicator.
+            0: Updates available
+            1: Up to date
+            2: Connection error
+            3: Local version unknown
+        """
+        super().__init__(parent)
+
+        self.setWindowTitle("Check for updates...")
+        self.theme = parent.config.get("Theme")
+
+        self.curr_version = curr_version
+        self.latest_version = latest_version
+        self.status = status
+
+        self.repo_url_release = (
+            "https://github.com/RIMS-Code/RIMSEvalGUI/releases/latest"
+        )
+
+        self.version_text()
+
+    def version_text(self):
+        """Set the about text for the dialog."""
+        layout = QtWidgets.QVBoxLayout()
+
+        font_status = QtGui.QFont()
+        font_status.setBold(True)
+        tmp_point_size = font_status.pointSize()
+        font_status.setPointSize(tmp_point_size + 4)
+
+        curr_version_label = QtWidgets.QLabel(
+            f"Current GUI version:\t{self.curr_version}"
+        )
+        layout.addWidget(curr_version_label)
+        latest_version_label = QtWidgets.QLabel(
+            f"Latest GUI version:\t{self.latest_version}"
+        )
+        layout.addWidget(latest_version_label)
+
+        # determine final text with the conclusion
+        disp_update_link = True
+        if self.status == 3:
+            conc_text = "Cannot determine current version of GUI."
+        elif self.status == 2:
+            conc_text = "Cannot connect to GitHub."
+        elif self.status == 0:
+            conc_text = "Updates available."
+        elif self.status == 1:
+            conc_text = "You are up to date."
+            disp_update_link = False
+        else:
+            conc_text = "Unknown error occurred."
+
+        layout.addStretch()
+
+        conc_widget = QtWidgets.QLabel(conc_text)
+        conc_widget.setFont(font_status)
+        conc_widget.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        conc_widget.setFixedHeight(50)
+        layout.addWidget(conc_widget)
+
+        if disp_update_link:
+            layout.addStretch()
+            latest_release_label = QtWidgets.QLabel(
+                f"Latest releases can be found here<br>"
+                f"{html_url(self.repo_url_release, theme=self.theme)}"
+            )
+            layout.addWidget(latest_release_label)
+
+        button_box = QtWidgets.QDialogButtonBox(
+            QtWidgets.QDialogButtonBox.StandardButton.Ok
+        )
+        button_box.accepted.connect(self.accept)
+        layout.addWidget(button_box)
+
+        self.setLayout(layout)
 
 
 class IntegralEditDialog(QtWidgets.QDialog):
@@ -525,3 +602,26 @@ class NormIsosDialog(QtWidgets.QDialog):
             "normalizing isotope is selected, the program will automatically use "
             "the most abundant one as the normalizing isotope of a given element.",
         )
+
+
+# METHODS #
+
+
+def html_url(url: str, name: str = None, theme: str = "") -> str:
+    """Create a HTML string for the URL and return it.
+
+    :param url: URL to set
+    :param name: Name of the URL, if None, use same as URL.
+    :param theme: "dark" or other theme.
+
+    :return: String with the correct formatting for URL
+    """
+    if theme == "dark":
+        color = "#988fd4"
+    else:
+        color = "#1501a3"
+
+    if name is None:
+        name = url
+    retval = f'<a href="{url}" style="color:{color}">{name}</a>'
+    return retval

@@ -6,9 +6,11 @@ import sys
 from typing import Union
 
 try:
+    from fbs_runtime import PUBLIC_SETTINGS as fbsrt_public_settings
     from fbs_runtime.application_context.PyQt6 import ApplicationContext
     import fbs_runtime.platform as fbsrt_platform
 except ImportError:
+    fbsrt_public_settings = {"version": "Unknown"}
     ApplicationContext = None
     fbsrt_platform = None
 
@@ -30,6 +32,7 @@ from data_views import IntegralsDisplay, OpenFilesListView
 from dialogs import (
     AboutDialog,
     BackgroundEditDialog,
+    CheckForUpdatesDialog,
     IntegralEditDialog,
     MassCalDialog,
     NormIsosDialog,
@@ -38,6 +41,7 @@ from elements import PeriodicTable
 from info_window import FileInfoWindow
 from plot_window import PlotWindow
 from statusindicator import StatusIndicator
+import utils
 import widgets
 
 
@@ -181,6 +185,11 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
         # update actions
         self.update_action_status()
+
+        self.show()
+
+        if self.config.get("Check for updates on startup"):
+            self.check_for_updates(startup=True)
 
     def init_local_profile(self):
         """Initialize a user's local profile, platform dependent."""
@@ -855,6 +864,13 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         tool_bar.addSeparator()
         tool_bar.addAction(settings_action)
 
+        check_updates_action = QtGui.QAction(
+            QtGui.QIcon(None), "Check for Updates", self
+        )
+        check_updates_action.setStatusTip("Check for updates online.")
+        check_updates_action.triggered.connect(self.check_for_updates)
+        self.settings_menu.addAction(check_updates_action)
+
         about_action = QtGui.QAction(
             QtGui.QIcon(self.appctxt.get_resource("icons/question.png")),
             "About",
@@ -896,6 +912,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             "Bins for spectra export": 10,
             "Max. time dt ions histogram (ns)": 120,
             "Theme": "light",
+            "Check for updates on startup": True,
             "User folder": str(Path.home()),
             "Norm isos": {},
         }
@@ -1569,6 +1586,27 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             lambda: self.update_settings(config_dialog.config)
         )
         config_dialog.exec()
+
+    def check_for_updates(self, startup=False):
+        """Check for updates and open a dialog with the results."""
+        curr_version = fbsrt_public_settings["version"]
+
+        # add 'v' to current version if required
+        if curr_version != "Unknown" and curr_version[0] != "v":
+            curr_version = f"v{curr_version}"
+
+        latest_version, status = utils.check_update_status(curr_version)
+
+        if startup and status != 0:
+            return  # don't open anything, since it's at startup
+
+        dialog = CheckForUpdatesDialog(
+            self,
+            curr_version=curr_version,
+            latest_version=latest_version,
+            status=status,
+        )
+        dialog.exec()
 
     def about_dialog(self):
         """Open an about dialog."""
