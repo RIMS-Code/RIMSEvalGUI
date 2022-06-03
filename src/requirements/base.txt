@@ -4,3 +4,4 @@ rimseval
 git+https://github.com/trappitsch/pyqtconfig@DialogBox_fixes_for_PyQt6
 matplotlib
 numpy
+requests
