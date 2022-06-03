@@ -49,6 +49,7 @@ class PlotWindow(QtWidgets.QMainWindow):
         self.data = None
         self.integrals = None
         self.backgrounds = None
+        self.tof_to_chan = 1
 
         self.fig = Figure(figsize=(9, 6), dpi=100)
         self.sc = FigureCanvas(self.fig)
@@ -142,16 +143,34 @@ class PlotWindow(QtWidgets.QMainWindow):
         self.sc.draw()
 
     def plot_single(self) -> None:
-        """Plot the data of a single CRD file ont he canvas.
+        """Plot the data of a single CRD file ont he canvas."""
 
-        :param crd: CRD File to plot from
-        """
+        def format_coordinates(x, y):
+            ydisp = f"y={y:.1f}"
+            if self.tof is None:
+                return f"x={x:.2f}, {ydisp}"
+            elif self.mass is None or not self._plot_ms:  # ToF display
+                chan = int(x * self.tof_to_chan)
+                if self.mass is not None:  # we have a mass but display tof
+                    mass_ind = np.argmin(np.abs(self.tof - x))
+                    mass = self.mass[mass_ind]
+                    return f"Channel={chan}, ToF={x:.3f}us, Mass={mass:.2f}amu, {ydisp}"
+                else:  # no mass calibration, display tof only
+                    return f"Channel={chan}, ToF={x:.3f}us, {ydisp}"
+            else:  # Mass display
+                tof_ind = np.argmin(np.abs(self.mass - x))
+                tof = self.tof[tof_ind]
+                chan = int(tof * self.tof_to_chan)
+                return f"Channel={chan}, ToF={tof:.3f}us, Mass={x:.2f}amu, {ydisp}"
+
         xlim = self.axes.get_xlim()
         ylim = self.axes.get_ylim()
         if self.logy:
             ylim = 0.7, ylim[1]
 
         self.axes.clear()
+
+        self.axes.format_coord = format_coordinates
 
         if self.mass is None or not self._plot_ms:
             if self.tof is None:  # no data...
@@ -261,5 +280,6 @@ class PlotWindow(QtWidgets.QMainWindow):
         self.data = crd.data
         self.integrals = crd.def_integrals
         self.backgrounds = crd.def_backgrounds
+        self.tof_to_chan = crd.us_to_chan
         # plot the single spectrum
         self.plot_single()
