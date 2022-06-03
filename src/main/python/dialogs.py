@@ -1,6 +1,6 @@
 """File to show my own PyQtDialogs."""
 
-from typing import List, Tuple
+from typing import List
 
 from iniabu.utilities import item_formatter
 from PyQt6 import QtCore, QtGui, QtWidgets
