@@ -22,6 +22,7 @@ import rimseval
 from rimseval.data_io import excel_writer
 from rimseval.utilities import ini
 
+import export
 from data_models import (
     IntegralsModel,
     IntegralBackgroundDefinitionModel,
@@ -118,6 +119,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.calculate_batch_action = None
         self.export_mass_spectrum_action = None
         self.export_tof_spectrum_action = None
+        self.export_all_mass_spectra_action = None
+        self.export_all_tof_spectra_action = None
         self.special_excel_workup_file_action = None
         self.special_integrals_per_pkg_action = None
         self.special_hist_dt_ions_action = None
@@ -753,6 +756,35 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.export_menu.addAction(export_tof_spectrum_action)
         self.export_tof_spectrum_action = export_tof_spectrum_action
 
+        export_all_mass_spectra_action = QtGui.QAction(
+            QtGui.QIcon(),
+            "Export All Mass Spectra",
+            self,
+        )
+        export_all_mass_spectra_action.setStatusTip(
+            "Export all open Mass Spectra as csv file."
+        )
+        export_all_mass_spectra_action.triggered.connect(
+            lambda: self.export_all_open_spectra(tof=False)
+        )
+        self.export_menu.addSeparator()
+        self.export_menu.addAction(export_all_mass_spectra_action)
+        self.export_all_mass_spectra_action = export_all_mass_spectra_action
+
+        export_all_tof_spectra_action = QtGui.QAction(
+            QtGui.QIcon(),
+            "Export All ToF Spectra",
+            self,
+        )
+        export_all_tof_spectra_action.setStatusTip(
+            "Export all open Time of Flight Spectra as csv file."
+        )
+        export_all_tof_spectra_action.triggered.connect(
+            lambda: self.export_all_open_spectra(tof=True)
+        )
+        self.export_menu.addAction(export_all_tof_spectra_action)
+        self.export_all_tof_spectra_action = export_all_tof_spectra_action
+
         # SPECIAL ACTIONS #
         special_excel_workup_file_action = QtGui.QAction(
             QtGui.QIcon(None),
@@ -910,6 +942,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             "Copy integrals w/ unc.": True,
             "Copy timestamp with integrals": False,
             "Bins for spectra export": 10,
+            "Resolution multi ToF export (us)": 0.001,
+            "Resolution multi MS export (amu)": 0.005,
             "Max. time dt ions histogram (ns)": 120,
             "Theme": "light",
             "Check for updates on startup": True,
@@ -921,6 +955,12 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             "Peak FWHM (us)": {"preferred_handler": widgets.PreciseQDoubleSpinBox},
             "Max. time dt ions histogram (ns)": {
                 "preferred_handler": widgets.LargeQSpinBox
+            },
+            "Resolution multi ToF export (us)": {
+                "preferred_handler": widgets.PreciseQDoubleSpinBox
+            },
+            "Resolution multi MS export (amu)": {
+                "preferred_handler": widgets.PreciseQDoubleSpinBox
             },
             "Theme": {
                 "preferred_handler": QtWidgets.QComboBox,
@@ -1182,7 +1222,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
                     self.current_crd_file.optimize_mcal()
                 except Exception as err:
                     QtWidgets.QMessageBox.warning(
-                        self, "Mass calibratiaon optimization failed", err.args[0]
+                        self, "Mass calibration optimization failed", err.args[0]
                     )
                 self.update_all()
                 self.status_widget.set_status("outdated")
@@ -1487,6 +1527,71 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
                 rimseval.data_io.export.mass_spectrum(
                     self.current_crd_file, Path(fname), bins=bins
                 )
+
+    def export_all_open_spectra(self, tof: bool = False) -> None:
+        """Export all open spectra to a csv file.
+
+        Creates a histogram for all open tof or mass spectra and exports them to a csv
+        file. If no mass calibration is applied and mass spectra are required, the
+        calibration will be applied.
+
+        :param tof: If true, export ToF spectra, otherwise export mass spectra.
+        """
+        if tof:
+            dx = self.config.get("Resolution multi ToF export (us)")
+        else:
+            dx = self.config.get("Resolution multi MS export (amu)")
+
+        fname = QtWidgets.QFileDialog.getSaveFileName(
+            self,
+            "Save spectra as CSV File",
+            str(self.user_folder),
+            "CSV Files (*.csv)",
+        )[0]
+
+        if len(fname) > 0:
+            fname = Path(fname).with_suffix(".csv")
+            xdata = []  # x data to put into histogram - all
+            ydata = []  # y data to put into histogram - all
+            names = []  # file names of the spectra
+            xtitle = ""
+
+            for crd in self.crd_files.files:
+                if crd.tof is None:
+                    crd.spectrum_full()
+                names.append(crd.fname.name)
+                ydata.append(crd.data)
+
+                if tof:  # tof spectrum
+                    xdata.append(crd.tof)
+                    xtitle = "ToF (us)"
+                else:  # mass spectrum
+                    if crd.mass is None:
+                        if crd.def_mcal is None:
+                            QtWidgets.QMessageBox.warning(
+                                self,
+                                "No mass calibration available",
+                                f"No mass calibration available for file: {crd.fname}.",
+                            )
+                            return
+
+                        crd.mass_calibration()
+
+                        if self.config.get("Optimize Mass Calibration"):
+                            try:
+                                self.current_crd_file.optimize_mcal()
+                            except Exception as err:
+                                QtWidgets.QMessageBox.warning(
+                                    self,
+                                    "Mass calibration optimization failed",
+                                    err.args[0],
+                                )
+
+                    xdata.append(crd.mass)
+                    xtitle = "Mass (amu)"
+
+            # now do the export
+            export.export_histogram(fname, xdata, ydata, xtitle, names, dx)
 
     # SPECIAL FUNCTIONS #
 
@@ -1825,6 +1930,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self.calculate_batch_action,
             self.export_mass_spectrum_action,
             self.export_tof_spectrum_action,
+            self.export_all_mass_spectra_action,
+            self.export_all_tof_spectra_action,
             self.special_excel_workup_file_action,
             self.special_integrals_per_pkg_action,
             self.special_hist_dt_ions_action,
@@ -1844,6 +1951,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self.mass_cal_def_action,
             self.calculate_single_action,
             self.calculate_batch_action,
+            self.export_all_mass_spectra_action,
+            self.export_all_tof_spectra_action,
             self.special_hist_dt_ions_action,
             self.special_hist_ions_shot_action,
         ]
