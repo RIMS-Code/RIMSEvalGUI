@@ -1,10 +1,9 @@
-# RIMSEvalGUI v2.0.9
+# RIMSEvalGUI v2.0.10
 
-RIMSEvalGUI release based on the latest `rimseval` development version `v2.0.0.dev6`.
+RIMSEvalGUI release based on the latest `rimseval` development version `v2.0.0.dev7`.
 
 **Main Changes to GUI:**
-- Add capability to export mass and ToF histograms for all open spectra.
-- On startup - unless deactivated - the program checks if there are new releases on GitHub.
-- The coordinate reader in the Plot window now shows Channel, ToF, and Mass (if available) for the mouse position.
+- Calibration file reading error should now display a more useful error message, instead of just a `json` read error.
+- The row headers for each integral now contains a filled circle in the same color as the peak itself is colored in when looking at the plot.
 
-Changes in `rimseval` package since last version: see [here](https://github.com/RIMS-Code/RIMSEval/releases/tag/v2.0.0.dev6).
+Changes in `rimseval` package since last version: see [here](https://github.com/RIMS-Code/RIMSEval/releases/tag/v2.0.0.dev7).

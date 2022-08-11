@@ -1,10 +1,11 @@
 """Models for connecting opened data with views."""
 
 from pathlib import Path
-from typing import Any, List
+from typing import List
 
-from PyQt6 import QtCore, QtGui, QtWidgets
+from PyQt6 import QtCore, QtGui
 import numpy as np
+from rimseval.guis.integrals import tableau_color
 
 
 class OpenFilesModel(QtCore.QAbstractListModel):
@@ -131,8 +132,15 @@ class IntegralsModel(QtCore.QAbstractTableModel):
     def headerData(self, section, orientation, role):
         # section is the index of the column/row.
         if role == QtCore.Qt.ItemDataRole.DisplayRole:
-            if orientation == QtCore.Qt.Orientation.Horizontal:
+            if orientation == QtCore.Qt.Orientation.Horizontal:  # column headers
                 return str(self._header[section])
+            if orientation == QtCore.Qt.Orientation.Vertical:  # row headers
+                return "\u25CF"
+
+        if role == QtCore.Qt.ItemDataRole.ForegroundRole:
+            if orientation == QtCore.Qt.Orientation.Vertical:
+                color = tableau_color(section)
+                return QtGui.QBrush(QtGui.QColor(color))
 
     def rowCount(self, index):
         """Return the number of rows."""
