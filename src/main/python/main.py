@@ -1096,6 +1096,9 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
     def unload_selected_crd(self):
         """Close selected CRD files."""
+        if not self.crd_files:  # No files are open
+            return
+
         selected_models = self.file_names_view.selectedIndexes()
         selected_indexes = [it.row() for it in selected_models]
         main_id = self.file_names_model.currently_active
