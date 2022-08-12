@@ -439,6 +439,16 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         unload_crd_action.triggered.connect(self.unload_selected_crd)
         self.file_menu.addAction(unload_crd_action)
 
+        plot_multi_spectra_action = QtGui.QAction(
+            QtGui.QIcon(None), "Plot multiple spectra", self
+        )
+        plot_multi_spectra_action.setStatusTip(
+            "Plot spectra for all currently selected CRD files."
+        )
+        plot_multi_spectra_action.triggered.connect(self.plot_multiple_crd_spectra)
+        self.file_menu.addSeparator()
+        self.file_menu.addAction(plot_multi_spectra_action)
+
         load_cal_action = QtGui.QAction(
             QtGui.QIcon(None),
             "Load calibration",
@@ -1116,6 +1126,18 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         # now unload from file list
         self.file_names_model.remove_from_list(selected_indexes, new_main_id)
 
+    def plot_multiple_crd_spectra(self):
+        """Takes the currently active crd spectra and sends them to the plot window."""
+        if not self.crd_files:
+            return
+
+        selected_models = self.file_names_view.selectedIndexes()
+        selected_indexes = [it.row() for it in selected_models]
+
+        crds_to_plot = [self.crd_files.files[it] for it in selected_indexes]
+        for tmp in crds_to_plot:
+            print(tmp.fname)
+
     def show_file_view_cm(self, position) -> None:
         """Show the context menu for file views.
 
@@ -1134,7 +1156,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         elif action == unloadAction:
             self.unload_selected_crd()
         elif action == plotMultiAction:
-            print("Plot multi")
+            self.plot_multiple_crd_spectra()
 
     def load_calibration(self, fname: Path = None):
         """Load a specific calibration file.
