@@ -216,6 +216,10 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             "Double click file to make current.\n"
             "Select multiple with Shift / Ctrl for batch processing."
         )
+        self.file_names_view.setContextMenuPolicy(
+            QtCore.Qt.ContextMenuPolicy.CustomContextMenu
+        )
+        self.file_names_view.customContextMenuRequested.connect(self.show_file_view_cm)
         layout.addWidget(self.file_names_view)
 
         # FILE CONTROL #
@@ -1108,6 +1112,26 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         )
         # now unload from file list
         self.file_names_model.remove_from_list(selected_indexes, new_main_id)
+
+    def show_file_view_cm(self, position) -> None:
+        """Show the context menu for file views.
+
+        :param position: Position of menu, will be mapped to file names view.
+        """
+        menu = QtWidgets.QMenu(self)
+        addAction = menu.addAction("Add Selected CRD(s)")
+        unloadAction = menu.addAction("Unload Selected CRD(s)")
+        menu.addSeparator()
+        plotMultiAction = menu.addAction("Plot All Selected Spectra")
+
+        action = menu.exec(self.file_names_view.mapToGlobal(position))
+
+        if action == addAction:
+            self.open_additional_crd()
+        elif action == unloadAction:
+            self.unload_selected_crd()
+        elif action == plotMultiAction:
+            print("Plot multi")
 
     def load_calibration(self, fname: Path = None):
         """Load a specific calibration file.
