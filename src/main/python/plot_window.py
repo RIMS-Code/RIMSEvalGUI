@@ -128,7 +128,7 @@ class PlotWindow(QtWidgets.QMainWindow):
         self.entry_xrange_stop.setValidator(QtGui.QDoubleValidator(bottom=0, top=1000))
         self.entry_xrange_stop.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight)
         self.entry_xrange_stop.editingFinished.connect(self.set_x_range)
-        self.entry_xrange_start.setToolTip("Right x-axis range to set.")
+        self.entry_xrange_stop.setToolTip("Right x-axis range to set.")
         self.button_bar.addWidget(self.entry_xrange_stop)
 
         self.button_set_xrange.clicked.connect(self.set_x_range)
