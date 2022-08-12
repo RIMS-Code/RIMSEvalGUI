@@ -33,6 +33,11 @@ class PlotWindow(QtWidgets.QMainWindow):
         self.button_integrals = QtWidgets.QPushButton("Integrals")
         self.button_backgrounds = QtWidgets.QPushButton("Backgrounds")
 
+        # set xrange stuff
+        self.entry_xrange_start = QtWidgets.QLineEdit()
+        self.entry_xrange_stop = QtWidgets.QLineEdit()
+        self.button_set_xrange = QtWidgets.QPushButton("Set x limits")
+
         # settings for the program
         self._plot_ms = True  # plot mass spectrum when mass available\
         self._plot_integrals = True
@@ -110,6 +115,27 @@ class PlotWindow(QtWidgets.QMainWindow):
         self.button_backgrounds.clicked.connect(self.toggle_backgrounds)
         self.button_bar.addWidget(self.button_backgrounds)
 
+        # x range
+
+        self.button_bar.addStretch()
+
+        self.entry_xrange_start.setValidator(QtGui.QDoubleValidator(bottom=0, top=1000))
+        self.entry_xrange_start.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight)
+        self.entry_xrange_start.editingFinished.connect(self.set_x_range)
+        self.entry_xrange_start.setToolTip("Left x-axis range to set.")
+        self.button_bar.addWidget(self.entry_xrange_start)
+
+        self.entry_xrange_stop.setValidator(QtGui.QDoubleValidator(bottom=0, top=1000))
+        self.entry_xrange_stop.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight)
+        self.entry_xrange_stop.editingFinished.connect(self.set_x_range)
+        self.entry_xrange_start.setToolTip("Right x-axis range to set.")
+        self.button_bar.addWidget(self.entry_xrange_stop)
+
+        self.button_set_xrange.clicked.connect(self.set_x_range)
+        self.button_bar.addWidget(self.button_set_xrange)
+
+        # close button
+
         close_button = QtWidgets.QPushButton("Close")
         close_button.setToolTip("Hide this window from view")
         close_button.clicked.connect(self.close)
@@ -127,6 +153,11 @@ class PlotWindow(QtWidgets.QMainWindow):
         """Clear figure."""
         self.axes.clear()
         self.sc.draw()
+
+    def clear_x_range(self):
+        """Clear the x-range of all values."""
+        self.entry_xrange_start.setText("")
+        self.entry_xrange_stop.setText("")
 
     def logy_toggle(self):
         """Toggle logy."""
@@ -210,6 +241,28 @@ class PlotWindow(QtWidgets.QMainWindow):
             if self._plot_backgrounds:
                 self.shade_backgrounds()
 
+    def set_x_range(self):
+        """Set the x range according to user specs."""
+        start = None
+        stop = None
+
+        if (st := self.entry_xrange_start.text()) != "":
+            start = float(st)
+        if (st := self.entry_xrange_stop.text()) != "":
+            stop = float(st)
+
+        if not start and not stop:
+            return
+
+        self.ax_autoscale_button.setChecked(False)
+
+        if start:
+            self.axes.set_xlim(left=start)
+        if stop:
+            self.axes.set_xlim(right=stop)
+
+        self.sc.draw()
+
     def shade_backgrounds(self):
         """Go through background list and shade them."""
         if self.backgrounds is not None and self.integrals is not None:
@@ -250,7 +303,16 @@ class PlotWindow(QtWidgets.QMainWindow):
     def toggle_autoscale(self) -> None:
         """Run autoscale on current axis if autoscale is turned on by user."""
         if self.ax_autoscale_button.isChecked():
+
+            # turn around if necessary
+            curr_xlims = self.axes.get_xlim()
+            if curr_xlims[0] > curr_xlims[1]:
+                self.axes.set_xlim(curr_xlims[1], curr_xlims[0])
+
             self.axes.autoscale()
+
+            self.clear_x_range()
+
             self.sc.draw()
 
     def toggle_integrals(self) -> None:
