@@ -1150,10 +1150,10 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         """
         menu = QtWidgets.QMenu(self)
         menu.addAction(self.open_additional_crd_action)
-        menu.addAction("Unload Selected CRD(s)")
+        menu.addAction(self.unload_crd_action)
         menu.addSeparator()
-        menu.addAction("Plot Active Spectrum")
-        menu.addAction("Plot Selected Spectra")
+        menu.addAction(self.plot_active_spectrum_action)
+        menu.addAction(self.plot_multi_spectra_action)
 
         menu.exec(self.file_names_view.mapToGlobal(position))
 
@@ -2099,8 +2099,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         selected_indexes = [it.row() for it in selected_models]
 
         crds_to_plot = [self.crd_files.files[it] for it in selected_indexes]
-        for tmp in crds_to_plot:
-            print(tmp.fname)
+        self.plot_window.update_data(crds_to_plot)
 
     def update_status_bar_processed(self, name) -> None:
         """Print message to status bar that a given file has been processed.
