@@ -1,5 +1,7 @@
 """PyQt Main window to display mass spectrometer."""
 
+from typing import Union, List
+
 import matplotlib
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
@@ -39,7 +41,8 @@ class PlotWindow(QtWidgets.QMainWindow):
         self.button_set_xrange = QtWidgets.QPushButton("Set x limits")
 
         # settings for the program
-        self._plot_ms = True  # plot mass spectrum when mass available\
+        self._is_multi_plot = False
+        self._plot_ms = True  # plot mass spectrum when mass available
         self._plot_integrals = True
         self._plot_backgrounds = True
 
@@ -159,6 +162,42 @@ class PlotWindow(QtWidgets.QMainWindow):
         self.entry_xrange_start.setText("")
         self.entry_xrange_stop.setText("")
 
+    def format_coordinates(self, x: float, y: float) -> str:
+        """Format the coordinates that should be displayed
+
+        :param x: X coordinate of mouse
+        :param y: Y coordinate of mouse
+
+        :return: String to display on top
+        """
+        tof = self.tof[0] if self._is_multi_plot else self.tof
+        mass = self.mass[0] if self._is_multi_plot and self.mass else self.mass
+
+        ydisp = f"y={y:.1f}"
+        if tof is None:
+            return f"x={x:.2f}, {ydisp}"
+        elif mass is None or not self._plot_ms:  # ToF display
+            if self.tof_to_chan:
+                chan = int(x * self.tof_to_chan)
+                chan_disp = f"Channel={chan}, "
+            else:
+                chan_disp = ""
+            if mass is not None:  # we have a mass but display tof
+                mass_ind = np.argmin(np.abs(tof - x))
+                mass = mass[mass_ind]
+                return f"{chan_disp}ToF={x:.3f}us, Mass={mass:.2f}amu, {ydisp}"
+            else:  # no mass calibration, display tof only
+                return f"{chan_disp}ToF={x:.3f}us, {ydisp}"
+        else:  # Mass display
+            tof_ind = np.argmin(np.abs(mass - x))
+            tof = tof[tof_ind]
+            if self.tof_to_chan:
+                chan = int(tof * self.tof_to_chan)
+                chan_disp = f"Channel={chan}, "
+            else:
+                chan_disp = ""
+            return f"{chan_disp}ToF={tof:.3f}us, Mass={x:.2f}amu, {ydisp}"
+
     def logy_toggle(self):
         """Toggle logy."""
         self.logy = not self.logy
@@ -173,26 +212,67 @@ class PlotWindow(QtWidgets.QMainWindow):
 
         self.sc.draw()
 
-    def plot_single(self) -> None:
-        """Plot the data of a single CRD file ont he canvas."""
+    def plot_multi(self) -> None:
+        """Plot multiple spectra files on the canvas."""
+        xlim = self.axes.get_xlim()
+        ylim = self.axes.get_ylim()
+        if self.logy:
+            ylim = 0.7, ylim[1]
 
-        def format_coordinates(x, y):
-            ydisp = f"y={y:.1f}"
-            if self.tof is None:
-                return f"x={x:.2f}, {ydisp}"
-            elif self.mass is None or not self._plot_ms:  # ToF display
-                chan = int(x * self.tof_to_chan)
-                if self.mass is not None:  # we have a mass but display tof
-                    mass_ind = np.argmin(np.abs(self.tof - x))
-                    mass = self.mass[mass_ind]
-                    return f"Channel={chan}, ToF={x:.3f}us, Mass={mass:.2f}amu, {ydisp}"
-                else:  # no mass calibration, display tof only
-                    return f"Channel={chan}, ToF={x:.3f}us, {ydisp}"
-            else:  # Mass display
-                tof_ind = np.argmin(np.abs(self.mass - x))
-                tof = self.tof[tof_ind]
-                chan = int(tof * self.tof_to_chan)
-                return f"Channel={chan}, ToF={tof:.3f}us, Mass={x:.2f}amu, {ydisp}"
+        self.axes.clear()
+
+        self.axes.format_coord = self.format_coordinates
+
+        # are masses / tofs available?
+        masses_unavailable = any([it is None for it in self.mass])
+        tofs_unavailable = any([it is None for it in self.tof])
+
+        if masses_unavailable or not self._plot_ms:
+            if tofs_unavailable:  # no data
+                self.sc.draw()  # clear plot
+                return
+            xax = self.tof
+            xlabel = "Time of Flight (us)"
+        elif not tofs_unavailable:
+            xax = self.mass
+            xlabel = "Mass (amu)"
+        else:
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Undefined data",
+                "Tof and mass axes are undefined. "
+                "Please process your CRD files first "
+                "before trying to plot multiple spectra.",
+            )
+            self.sc.draw()
+            return
+
+        for it, xdat in enumerate(xax):
+            self.axes.plot(
+                xdat,
+                self.data[it],
+                color=tableau_color(it),
+                label=self.file_name[it],
+                linewidth=0.5,
+            )
+
+        self.axes.set_xlabel(xlabel)
+        self.axes.set_ylabel("Counts")
+        if self.logy:
+            self.axes.set_yscale("log")
+            self.axes.set_ylim(bottom=0.7)
+
+        # set limits back if user wants it
+        if not self.ax_autoscale_button.isChecked():
+            self.axes.set_xlim(xlim)
+            self.axes.set_ylim(ylim)
+
+        self.axes.legend()
+
+        self.sc.draw()
+
+    def plot_single(self) -> None:
+        """Plot the data of a single CRD file on the canvas."""
 
         xlim = self.axes.get_xlim()
         ylim = self.axes.get_ylim()
@@ -201,7 +281,7 @@ class PlotWindow(QtWidgets.QMainWindow):
 
         self.axes.clear()
 
-        self.axes.format_coord = format_coordinates
+        self.axes.format_coord = self.format_coordinates
 
         if self.mass is None or not self._plot_ms:
             if self.tof is None:  # no data...
@@ -332,16 +412,39 @@ class PlotWindow(QtWidgets.QMainWindow):
         self._plot_ms = not self._plot_ms
         self.button_spectrum_type.setChecked(self._plot_ms)
         self.ax_autoscale_button.setChecked(True)
-        self.plot_single()
 
-    def update_data(self, crd: rimseval.CRDFileProcessor) -> None:
-        """Update the data required for plotting."""
-        self.file_name = crd.fname.with_suffix("").name
-        self.mass = crd.mass
-        self.tof = crd.tof
-        self.data = crd.data
-        self.integrals = crd.def_integrals
-        self.backgrounds = crd.def_backgrounds
-        self.tof_to_chan = crd.us_to_chan
-        # plot the single spectrum
-        self.plot_single()
+        if self._is_multi_plot:
+            self.plot_multi()
+        else:
+            self.plot_single()
+
+    def update_data(
+        self, crd: Union[rimseval.CRDFileProcessor, List[rimseval.CRDFileProcessor]]
+    ) -> None:
+        """Update the data required for plotting.
+
+        :param crd: CRD file(s) to plot. If single file, plot only one. If a list,
+            use the "plot_multi" feature and deactivate some featuers like shadings.
+        """
+        if isinstance(crd, rimseval.CRDFileProcessor):  # plot single
+            self.button_integrals.setEnabled(True)
+            self.button_backgrounds.setEnabled(True)
+            self.file_name = crd.fname.with_suffix("").name
+            self.mass = crd.mass
+            self.tof = crd.tof
+            self.data = crd.data
+            self.integrals = crd.def_integrals
+            self.backgrounds = crd.def_backgrounds
+            self.tof_to_chan = crd.us_to_chan
+            self._is_multi_plot = False
+            self.plot_single()
+        else:
+            self.button_integrals.setEnabled(False)
+            self.button_backgrounds.setEnabled(False)
+            self.file_name = [it.fname.with_suffix("").name for it in crd]
+            self.mass = [it.mass for it in crd]
+            self.tof = [it.tof for it in crd]
+            self.data = [it.data for it in crd]
+            self.tof_to_chan = None
+            self._is_multi_plot = True
+            self.plot_multi()
