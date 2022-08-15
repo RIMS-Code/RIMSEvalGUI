@@ -411,7 +411,9 @@ class PlotWindow(QtWidgets.QMainWindow):
         """Toggle the spectrum type that is being plotted."""
         self._plot_ms = not self._plot_ms
         self.button_spectrum_type.setChecked(self._plot_ms)
+
         self.ax_autoscale_button.setChecked(True)
+        self.clear_x_range()
 
         if self._is_multi_plot:
             self.plot_multi()
