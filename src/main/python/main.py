@@ -97,6 +97,10 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.settings_menu = menu_bar.addMenu("Settings")
 
         # actions
+        self.open_additional_crd_action = None
+        self.unload_crd_action = None
+        self.plot_active_spectrum_action = None
+        self.plot_multi_spectra_action = None
         self.load_cal_action = None
         self.load_lioneval_cal_action = None
         self.save_cal_action = None
@@ -216,6 +220,10 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             "Double click file to make current.\n"
             "Select multiple with Shift / Ctrl for batch processing."
         )
+        self.file_names_view.setContextMenuPolicy(
+            QtCore.Qt.ContextMenuPolicy.CustomContextMenu
+        )
+        self.file_names_view.customContextMenuRequested.connect(self.show_file_view_cm)
         layout.addWidget(self.file_names_view)
 
         # FILE CONTROL #
@@ -398,7 +406,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.main_widget.setLayout(layout)
 
     def init_menu_toolbar(self):
-        """Initialize the basics of the menu and tool bar, set the given categories."""
+        """Initialize the basics of the menu and toolbar, set the given categories."""
         tool_bar = QtWidgets.QToolBar("Main Toolbar")
         tool_bar.setIconSize(QtCore.QSize(24, 24))
 
@@ -425,6 +433,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         )
         open_additional_crd_action.triggered.connect(self.open_additional_crd)
         self.file_menu.addAction(open_additional_crd_action)
+        self.open_additional_crd_action = open_additional_crd_action
 
         unload_crd_action = QtGui.QAction(
             QtGui.QIcon(None), "Unload selected CRD(s)", self
@@ -434,6 +443,28 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         )
         unload_crd_action.triggered.connect(self.unload_selected_crd)
         self.file_menu.addAction(unload_crd_action)
+        self.unload_crd_action = unload_crd_action
+
+        plot_active_spectrum_action = QtGui.QAction(
+            QtGui.QIcon(None), "Plot active spectrum", self
+        )
+        plot_active_spectrum_action.setStatusTip(
+            "Plot spectrum of currently active CRD file."
+        )
+        plot_active_spectrum_action.triggered.connect(self.update_plot_window)
+        self.file_menu.addSeparator()
+        self.file_menu.addAction(plot_active_spectrum_action)
+        self.plot_active_spectrum_action = plot_active_spectrum_action
+
+        plot_multi_spectra_action = QtGui.QAction(
+            QtGui.QIcon(None), "Plot selected spectra", self
+        )
+        plot_multi_spectra_action.setStatusTip(
+            "Plot spectra for all currently selected CRD files."
+        )
+        plot_multi_spectra_action.triggered.connect(self.update_plot_window_multi)
+        self.file_menu.addAction(plot_multi_spectra_action)
+        self.plot_multi_spectra_action = plot_multi_spectra_action
 
         load_cal_action = QtGui.QAction(
             QtGui.QIcon(None),
@@ -1092,6 +1123,9 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
     def unload_selected_crd(self):
         """Close selected CRD files."""
+        if not self.crd_files:  # No files are open
+            return
+
         selected_models = self.file_names_view.selectedIndexes()
         selected_indexes = [it.row() for it in selected_models]
         main_id = self.file_names_model.currently_active
@@ -1108,6 +1142,20 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         )
         # now unload from file list
         self.file_names_model.remove_from_list(selected_indexes, new_main_id)
+
+    def show_file_view_cm(self, position) -> None:
+        """Show the context menu for file views.
+
+        :param position: Position of menu, will be mapped to file names view.
+        """
+        menu = QtWidgets.QMenu(self)
+        menu.addAction(self.open_additional_crd_action)
+        menu.addAction(self.unload_crd_action)
+        menu.addSeparator()
+        menu.addAction(self.plot_active_spectrum_action)
+        menu.addAction(self.plot_multi_spectra_action)
+
+        menu.exec(self.file_names_view.mapToGlobal(position))
 
     def load_calibration(self, fname: Path = None):
         """Load a specific calibration file.
@@ -1908,6 +1956,9 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         crd = self.current_crd_file
         # turn all off
         all_actions = [
+            self.unload_crd_action,
+            self.plot_active_spectrum_action,
+            self.plot_multi_spectra_action,
             self.load_cal_action,
             self.load_lioneval_cal_action,
             self.save_cal_action,
@@ -1944,6 +1995,9 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             return
 
         crd_loaded_actions = [
+            self.unload_crd_action,
+            self.plot_active_spectrum_action,
+            self.plot_multi_spectra_action,
             self.load_cal_action,
             self.load_lioneval_cal_action,
             self.save_cal_action,
@@ -2035,6 +2089,17 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
     def update_plot_window(self) -> None:
         """Update the plot window."""
         self.plot_window.update_data(self.current_crd_file)
+
+    def update_plot_window_multi(self):
+        """Takes the currently active crd spectra and sends them to the plot window."""
+        if not self.crd_files:
+            return
+
+        selected_models = self.file_names_view.selectedIndexes()
+        selected_indexes = [it.row() for it in selected_models]
+
+        crds_to_plot = [self.crd_files.files[it] for it in selected_indexes]
+        self.plot_window.update_data(crds_to_plot)
 
     def update_status_bar_processed(self, name) -> None:
         """Print message to status bar that a given file has been processed.
