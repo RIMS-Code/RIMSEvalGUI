@@ -1432,6 +1432,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         )
         if dialog.exec():
             self.current_crd_file.def_backgrounds = model.return_data()
+            self.current_crd_file.sort_backgrounds()
             self.update_all()
 
             if self.control_bg_correction.isChecked():
