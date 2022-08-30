@@ -20,6 +20,7 @@ from pyqtconfig import ConfigDialog, ConfigManager
 import qdarktheme
 import rimseval
 from rimseval.data_io import excel_writer
+import rimseval.processor_utils as pu
 from rimseval.utilities import ini
 
 import export
@@ -1299,9 +1300,31 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         model = IntegralBackgroundDefinitionModel(self.current_crd_file.def_integrals)
         dialog = IntegralEditDialog(model, parent=self)
         if dialog.exec():
-            self.current_crd_file.def_integrals = model.return_data()
+            def_integrals = model.return_data()
+
+            # check for background overlaps
+            bgs_self_corr, bgs_all_corr = pu.peak_background_overlap(
+                def_integrals, self.current_crd_file.def_backgrounds
+            )
+
+            if (
+                not bgs_self_corr[1].shape == bgs_all_corr[1].shape
+                or not (bgs_self_corr[1] == bgs_all_corr[1]).all()
+            ):
+                question = QtWidgets.QMessageBox.question(
+                    self,
+                    "Overlap detected",
+                    "Your peak definitions overlap with backgrounds "
+                    "other than their own. Should this be automatically corrected?",
+                )
+                if question == QtWidgets.QMessageBox.StandardButton.Yes:
+                    self.current_crd_file.def_backgrounds = bgs_all_corr
+
+            self.current_crd_file.def_integrals = def_integrals
+
             if self.config.get("Auto sort integrals"):
                 self.current_crd_file.sort_integrals(sort_vals=False)
+
             self.update_all()
 
             self.status_widget.set_status("outdated")
