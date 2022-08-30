@@ -1302,23 +1302,27 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         if dialog.exec():
             def_integrals = model.return_data()
 
-            # check for background overlaps
-            bgs_self_corr, bgs_all_corr = pu.peak_background_overlap(
-                def_integrals, self.current_crd_file.def_backgrounds
-            )
-
             if (
-                not bgs_self_corr[1].shape == bgs_all_corr[1].shape
-                or not (bgs_self_corr[1] == bgs_all_corr[1]).all()
+                def_integrals is not None
+                and self.current_crd_file.def_backgrounds is not None
             ):
-                question = QtWidgets.QMessageBox.question(
-                    self,
-                    "Overlap detected",
-                    "Your peak definitions overlap with backgrounds "
-                    "other than their own. Should this be automatically corrected?",
+                # check for background overlaps
+                bgs_self_corr, bgs_all_corr = pu.peak_background_overlap(
+                    def_integrals, self.current_crd_file.def_backgrounds
                 )
-                if question == QtWidgets.QMessageBox.StandardButton.Yes:
-                    self.current_crd_file.def_backgrounds = bgs_all_corr
+
+                if (
+                    not bgs_self_corr[1].shape == bgs_all_corr[1].shape
+                    or not (bgs_self_corr[1] == bgs_all_corr[1]).all()
+                ):
+                    question = QtWidgets.QMessageBox.question(
+                        self,
+                        "Overlap detected",
+                        "Your peak definitions overlap with backgrounds "
+                        "other than their own. Should this be automatically corrected?",
+                    )
+                    if question == QtWidgets.QMessageBox.StandardButton.Yes:
+                        self.current_crd_file.def_backgrounds = bgs_all_corr
 
             self.current_crd_file.def_integrals = def_integrals
 

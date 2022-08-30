@@ -347,12 +347,13 @@ class IntegralEditDialog(QtWidgets.QDialog):
 
     def accept(self):
         """Ensure peaks don't overlap, then accept the user input."""
-        integral_vals = self.model.return_data()[1]
-        if pu.check_peaks_overlap(integral_vals):
-            QtWidgets.QMessageBox.warning(
-                self, "Peak overlap", "Peaks overlap, please correct and try again."
-            )
-            return
+        integral_vals = self.model.return_data()
+        if integral_vals is not None:
+            if pu.check_peaks_overlap(integral_vals[1]):
+                QtWidgets.QMessageBox.warning(
+                    self, "Peak overlap", "Peaks overlap, please correct and try again."
+                )
+                return
         super().accept()
 
     def add_element(self):
