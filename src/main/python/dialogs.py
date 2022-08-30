@@ -5,6 +5,7 @@ from typing import List
 from iniabu.utilities import item_formatter
 from PyQt6 import QtCore, QtGui, QtWidgets
 import numpy as np
+from rimseval import processor_utils as pu
 from rimseval.utilities import ini
 
 from data_models import IntegralBackgroundDefinitionModel, NormIsosModel
@@ -343,6 +344,16 @@ class IntegralEditDialog(QtWidgets.QDialog):
 
         layout.addWidget(button_box)
         self.setLayout(layout)
+
+    def accept(self):
+        """Ensure peaks don't overlap, then accept the user input."""
+        integral_vals = self.model.return_data()[1]
+        if pu.check_peaks_overlap(integral_vals):
+            QtWidgets.QMessageBox.warning(
+                self, "Peak overlap", "Peaks overlap, please correct and try again."
+            )
+            return
+        super().accept()
 
     def add_element(self):
         """Adds all isotopes of an element with set range and mass offset."""
