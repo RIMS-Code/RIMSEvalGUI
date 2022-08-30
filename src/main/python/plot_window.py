@@ -154,6 +154,7 @@ class PlotWindow(QtWidgets.QMainWindow):
 
     def clear_plot(self):
         """Clear figure."""
+        self.ax_autoscale_button.setChecked(True)  # disable autoscale
         self.axes.clear()
         self.sc.draw()
 
