@@ -130,6 +130,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.special_integrals_per_pkg_action = None
         self.special_hist_dt_ions_action = None
         self.special_hist_ions_shot_action = None
+        self.special_clean_up_file_action = None
         self.window_elements_action = None
         self.window_info_action = None
         self.window_plot_action = None
@@ -818,6 +819,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.export_all_tof_spectra_action = export_all_tof_spectra_action
 
         # SPECIAL ACTIONS #
+
         special_excel_workup_file_action = QtGui.QAction(
             QtGui.QIcon(None),
             "Create Excel Workup File",
@@ -864,6 +866,17 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         special_hist_dt_ions_action.triggered.connect(self.histogram_dt_ions)
         self.special_menu.addAction(special_hist_dt_ions_action)
         self.special_hist_dt_ions_action = special_hist_dt_ions_action
+
+        special_clean_up_file_action = QtGui.QAction(
+            QtGui.QIcon(None), "Clean up file", self
+        )
+        special_clean_up_file_action.setStatusTip(
+            "Show a histogram for multi-ion shots with time differences between ions."
+        )
+        special_clean_up_file_action.triggered.connect(self.clean_up_file)
+        self.special_menu.addSeparator()
+        self.special_menu.addAction(special_clean_up_file_action)
+        self.special_clean_up_file_action = special_clean_up_file_action
 
         # VIEW ACIONS #
 
@@ -1295,6 +1308,33 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.tmp_window.show()
         self.status_widget.set_status("outdated")
 
+    def integrals_bg_check_overlap(self, def_integrals):
+        """Checks overlap of integrals and backgrounds and corrects.
+
+        :param def_integrals: Integral definition to compare.
+        """
+        if (
+            def_integrals is not None
+            and self.current_crd_file.def_backgrounds is not None
+        ):
+            # check for background overlaps
+            bgs_self_corr, bgs_all_corr = pu.peak_background_overlap(
+                def_integrals, self.current_crd_file.def_backgrounds
+            )
+
+            if (
+                not bgs_self_corr[1].shape == bgs_all_corr[1].shape
+                or not (bgs_self_corr[1] == bgs_all_corr[1]).all()
+            ):
+                question = QtWidgets.QMessageBox.question(
+                    self,
+                    "Overlap detected",
+                    "Your peak definitions overlap with backgrounds "
+                    "other than their own. Should this be automatically corrected?",
+                )
+                if question == QtWidgets.QMessageBox.StandardButton.Yes:
+                    self.current_crd_file.def_backgrounds = bgs_all_corr
+
     def integrals_set_edit(self):
         """Enable user to set integrals with a table widget."""
         model = IntegralBackgroundDefinitionModel(self.current_crd_file.def_integrals)
@@ -1302,30 +1342,9 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         if dialog.exec():
             def_integrals = model.return_data()
 
-            if (
-                def_integrals is not None
-                and self.current_crd_file.def_backgrounds is not None
-            ):
-                # check for background overlaps
-                bgs_self_corr, bgs_all_corr = pu.peak_background_overlap(
-                    def_integrals, self.current_crd_file.def_backgrounds
-                )
-
-                if (
-                    not bgs_self_corr[1].shape == bgs_all_corr[1].shape
-                    or not (bgs_self_corr[1] == bgs_all_corr[1]).all()
-                ):
-                    question = QtWidgets.QMessageBox.question(
-                        self,
-                        "Overlap detected",
-                        "Your peak definitions overlap with backgrounds "
-                        "other than their own. Should this be automatically corrected?",
-                    )
-                    if question == QtWidgets.QMessageBox.StandardButton.Yes:
-                        self.current_crd_file.def_backgrounds = bgs_all_corr
+            self.integrals_bg_check_overlap(def_integrals)
 
             self.current_crd_file.def_integrals = def_integrals
-
             if self.config.get("Auto sort integrals"):
                 self.current_crd_file.sort_integrals(sort_vals=False)
 
@@ -1672,6 +1691,20 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
     # SPECIAL FUNCTIONS #
 
+    def clean_up_file(self) -> None:
+        """Clean up the CRD file, especially calibration, and save it."""
+        # Sort backgrounds
+        self.current_crd_file.sort_backgrounds()
+        # Check background overlap
+        self.integrals_bg_check_overlap(self.current_crd_file.def_integrals)
+        # Sort integrals, if turned on in settings
+        if self.config.get("Auto sort integrals"):
+            self.current_crd_file.sort_integrals(sort_vals=False)
+
+        self.update_all()
+        self.save_calibration()
+        self.status_widget.set_status("outdated")
+
     def create_excel_workup(self) -> None:
         """Create an excel workup file."""
         query = QtWidgets.QFileDialog.getSaveFileName(
@@ -2016,6 +2049,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self.special_integrals_per_pkg_action,
             self.special_hist_dt_ions_action,
             self.special_hist_ions_shot_action,
+            self.special_clean_up_file_action,
         ]
         for action in all_actions:
             action.setDisabled(True)
@@ -2038,6 +2072,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self.export_all_tof_spectra_action,
             self.special_hist_dt_ions_action,
             self.special_hist_ions_shot_action,
+            self.special_clean_up_file_action,
         ]
         if crd is not None:  # so we have a file!
             for action in crd_loaded_actions:
