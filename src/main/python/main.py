@@ -1493,6 +1493,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             return
 
         # integrals
+        self.integrals_model.clear_data()
         if self.current_crd_file.def_integrals is not None:
             bg_corr = (
                 self.control_bg_correction.isChecked()
