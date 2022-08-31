@@ -1921,6 +1921,10 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self.control_dead_time_correction[0].setChecked(filters[key][0])
             self.control_dead_time_correction[1].setValue(filters[key][1])
 
+        key = "background_corr"
+        if key in filters:
+            self.control_bg_correction.setChecked(filters[key])
+
     def set_filters_from_controls(self) -> bool:
         """Set the CRD file applied filters from the given controls.
 
@@ -2002,6 +2006,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self.control_dead_time_correction[0].isChecked(),
             int(self.control_dead_time_correction[1].value()),
         ]
+
+        filters["background_corr"] = self.control_bg_correction.isChecked()
 
         self.current_crd_file.applied_filters = filters
 
