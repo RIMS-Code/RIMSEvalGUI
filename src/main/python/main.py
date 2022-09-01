@@ -871,7 +871,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             QtGui.QIcon(None), "Clean up file", self
         )
         special_clean_up_file_action.setStatusTip(
-            "Show a histogram for multi-ion shots with time differences between ions."
+            "Clean up the current calibration file and save a new one."
         )
         special_clean_up_file_action.triggered.connect(self.clean_up_file)
         self.special_menu.addSeparator()
