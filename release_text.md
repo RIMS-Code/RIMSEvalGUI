@@ -1,13 +1,12 @@
-# RIMSEvalGUI v2.0.11
+# RIMSEvalGUI v2.0.12
 
-RIMSEvalGUI release based on the latest `rimseval` development version `v2.0.0`.
-
-This is the first RIMSEvalGUI release that is based on `v2.0.0` of `rimseval!
+RIMSEvalGUI release based on the latest `rimseval` development version `v2.0.1`.
 
 **Main Changes to GUI:**
-- Plot window: User can now type in x-axis ranges. This will automatically uncheck the autoscale feature.
-- Added option to plot multiple open CRD files in "File"
-- File view now has a context menu to add, unload, or plot multiple CRDs
-- Better error catching when setting wrong indexes for cut spectrum filter
+- Overlap between integrals and peaks is now automatically checked for and corrected.
+- Backgrounds are automatically sorted when created or edited.
+- Clean file button was added under "Special". This cleans up calibration files and saves them, mostly for files that were originally generated on older versions of the software and for which sorting of integrals, backgrounds, etc. was never done properly.
 
-Changes in `rimseval` package since last version: see [here](https://github.com/RIMS-Code/RIMSEval/releases/tag/v2.0.0).
+In addition, the new release contains several bugfixes, see commit log for details.
+
+Changes in `rimseval` package since last version: see [here](https://github.com/RIMS-Code/RIMSEval/releases/tag/v2.0.1).
