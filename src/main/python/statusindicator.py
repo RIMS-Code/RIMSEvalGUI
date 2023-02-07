@@ -24,7 +24,6 @@ from PyQt6.QtGui import QPainter, QBrush, QPen
 
 class StatusIndicator(QWidget):
     def __init__(self, size=20, margin=5):
-
         super().__init__()
         # for statuses: on (green), busy (yellow), off (dark gray), error (red)
         self.status = "init"
