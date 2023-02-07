@@ -384,7 +384,6 @@ class PlotWindow(QtWidgets.QMainWindow):
     def toggle_autoscale(self) -> None:
         """Run autoscale on current axis if autoscale is turned on by user."""
         if self.ax_autoscale_button.isChecked():
-
             # turn around if necessary
             curr_xlims = self.axes.get_xlim()
             if curr_xlims[0] > curr_xlims[1]:
