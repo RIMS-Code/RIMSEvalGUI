@@ -118,6 +118,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.integrals_copy_all_w_fnames_action = None
         self.integrals_copy_pkg_action = None
         self.integrals_copy_pkg_w_names_action = None
+        self.integrals_export_action = None
+        self.integrals_export_as_action = None
         self.backgrounds_draw_action = None
         self.backgrounds_set_edit_action = None
         self.calculate_single_action = None
@@ -686,6 +688,31 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         )
         self.integrals_menu.addAction(integrals_copy_pkg_w_names_action)
         self.integrals_copy_pkg_w_names_action = integrals_copy_pkg_w_names_action
+
+        integrals_export_action = QtGui.QAction(
+            QtGui.QIcon(None), "Save Integrals", self
+        )
+        integrals_export_action.setStatusTip(
+            "Save integrals to a default csv file with the data file name plus '_int'."
+        )
+        integrals_export_action.setShortcut(QtGui.QKeySequence("Ctrl+Alt+s"))
+        integrals_export_action.triggered.connect(self.integrals_save_file)
+        self.integrals_menu.addSeparator()
+        self.integrals_menu.addAction(integrals_export_action)
+        self.integrals_export_action = integrals_export_action
+
+        integrals_export_as_action = QtGui.QAction(
+            QtGui.QIcon(None), "Save Integrals As", self
+        )
+        integrals_export_as_action.setStatusTip(
+            "Save integrals to a user defined csv file."
+        )
+        integrals_export_as_action.setShortcut(QtGui.QKeySequence("Ctrl+Alt+Shift+s"))
+        integrals_export_as_action.triggered.connect(
+            lambda: self.integrals_save_file(save_as=True)
+        )
+        self.integrals_menu.addAction(integrals_export_as_action)
+        self.integrals_export_as_action = integrals_export_as_action
 
         backgrounds_draw_action = QtGui.QAction(
             QtGui.QIcon(None),
@@ -1457,6 +1484,27 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             ret_str += "\n"
         QtWidgets.QApplication.clipboard().setText(ret_str)
 
+    def integrals_save_file(self, save_as: bool = False):
+        """Save the integrals to a default file.
+
+        :param save_as: Save the integrals with a user-defined filename.
+        """
+        crd = self.current_crd_file
+        if save_as:
+            query = QtWidgets.QFileDialog.getSaveFileName(
+                self,
+                caption="Save integrals as",
+                directory=str(self.user_folder),
+                filter="CSV Files (*.csv)",
+            )
+            if query[0]:
+                fname = Path(query[0]).with_suffix(".csv")
+            else:
+                return
+        else:
+            fname = None
+        rimseval.data_io.integrals.export(crd, fname=fname)
+
     def backgrounds_draw(self):
         """Open GUI for user to draw backgrounds."""
         logy = self.config.get("Plot with log y-axis")
@@ -2043,6 +2091,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self.integrals_copy_all_w_fnames_action,
             self.integrals_copy_pkg_action,
             self.integrals_copy_pkg_w_names_action,
+            self.integrals_export_action,
+            self.integrals_export_as_action,
             self.backgrounds_draw_action,
             self.backgrounds_set_edit_action,
             self.calculate_single_action,
@@ -2114,6 +2164,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self.integrals_copy_action,
             self.integrals_copy_w_names_action,
             self.integrals_copy_all_w_fnames_action,
+            self.integrals_export_action,
+            self.integrals_export_as_action,
             self.special_excel_workup_file_action,
         ]
         if crd.integrals is not None:
