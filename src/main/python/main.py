@@ -171,7 +171,11 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.tmp_window = None  # container in self for plot windows from package
 
         # bars and layouts of program
-        self.main_widget = QtWidgets.QWidget()
+        self.main_widget = QtWidgets.QTabWidget()
+        self.main_widget_processor = QtWidgets.QWidget()
+        self.main_widget_evaluator = QtWidgets.QWidget()
+        self.main_widget.addTab(self.main_widget_processor, "Processor")
+        self.main_widget.addTab(self.main_widget_evaluator, "Evaluator")
         self.status_bar = QtWidgets.QStatusBar()
         self.status_widget = StatusIndicator(size=20, margin=0)
 
@@ -184,7 +188,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
         # initialize the UI
         self.init_menu_toolbar()
-        self.init_main_widget()
+        self.init_processor_widget()
         self.init_status_bar()
 
         self.setStyleSheet(qdarktheme.load_stylesheet(self.config.get("Theme")))
@@ -211,7 +215,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         app_local_path.mkdir(parents=True, exist_ok=True)
         self.app_local_path = app_local_path
 
-    def init_main_widget(self):
+    def init_processor_widget(self):
         """Initialize the main widget."""
         layout = QtWidgets.QHBoxLayout()
 
@@ -407,7 +411,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         integral_display.setModel(self.integrals_model)
         layout.addWidget(integral_display)
 
-        self.main_widget.setLayout(layout)
+        self.main_widget_processor.setLayout(layout)
 
     def init_menu_toolbar(self):
         """Initialize the basics of the menu and toolbar, set the given categories."""

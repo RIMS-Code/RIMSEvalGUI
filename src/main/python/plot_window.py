@@ -2,6 +2,7 @@
 
 from typing import Union, List
 
+import darkdetect
 import matplotlib
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
@@ -24,7 +25,14 @@ class PlotWindow(QtWidgets.QMainWindow):
         # self.setGeometry(QtCore.QRect(1000, 1000, 100, 100))
         self.move(1550, 200)
 
-        self.theme = parent.config.get("Theme")
+        theme = parent.config.get("Theme")
+
+        if theme is None or theme == "auto":
+            if darkdetect.isDark():
+                self.theme = "dark"
+            else:
+                self.theme = "light"
+
         if self.theme == "dark":
             matplotlib.style.use("dark_background")
 
