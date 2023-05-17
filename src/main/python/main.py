@@ -1017,7 +1017,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             "Resolution multi ToF export (us)": 0.001,
             "Resolution multi MS export (amu)": 0.005,
             "Max. time dt ions histogram (ns)": 120,
-            "Theme": "light",
+            "Theme": "auto",
             "Check for updates on startup": True,
             "User folder": str(Path.home()),
             "Norm isos": {},
@@ -1036,7 +1036,11 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             },
             "Theme": {
                 "preferred_handler": QtWidgets.QComboBox,
-                "preferred_map_dict": {"Dark Colors": "dark", "Light Colors": "light"},
+                "preferred_map_dict": {
+                    "Automatic": "auto",
+                    "Dark Colors": "dark",
+                    "Light Colors": "light",
+                },
             },
             "User folder": {"prefer_hidden": True},
             "Norm isos": {"prefer_hidden": True},
