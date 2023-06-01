@@ -1125,9 +1125,21 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
                 self.crd_files.open_files()  # open, but no read
                 self.crd_files.peak_fwhm = self.config.get("Peak FWHM (us)")
 
-                self.crd_files.load_calibrations(
-                    secondary_cal=self.app_local_path.joinpath("calibration.json")
-                )
+                try:
+                    self.crd_files.load_calibrations(
+                        secondary_cal=self.app_local_path.joinpath("calibration.json")
+                    )
+                except OSError as err:
+                    if "calibration.json" in err.args[0]:
+                        # just skip, empty default calibration file written later
+                        QtWidgets.QMessageBox.warning(
+                            self,
+                            "Calibration file error.",
+                            "There seems to be an error with the default calibration "
+                            "file. I will delete it and start with a new one.",
+                        )
+                    else:
+                        raise OSError(err.args[0]) from err
 
                 self.file_names_model.set_new_list(file_paths)
 
