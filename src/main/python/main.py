@@ -1,6 +1,7 @@
 """Main RIMSEval graphical user interface."""
 
 import itertools
+import json
 from pathlib import Path
 import sys
 from typing import Union
@@ -1505,21 +1506,22 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
         :param save_as: Save the integrals with a user-defined filename.
         """
-        crd = self.current_crd_file
-        if save_as:
-            query = QtWidgets.QFileDialog.getSaveFileName(
-                self,
-                caption="Save integrals as",
-                directory=str(self.user_folder),
-                filter="CSV Files (*.csv)",
-            )
-            if query[0]:
-                fname = Path(query[0]).with_suffix(".csv")
-            else:
-                return
-        else:
-            fname = None
-        rimseval.data_io.integrals.export(crd, fname=fname)
+        # crd = self.current_crd_file
+        # if save_as:
+        #     query = QtWidgets.QFileDialog.getSaveFileName(
+        #         self,
+        #         caption="Save integrals as",
+        #         directory=str(self.user_folder),
+        #         filter="CSV Files (*.csv)",
+        #     )
+        #     if query[0]:
+        #         fname = Path(query[0]).with_suffix(".csv")
+        #     else:
+        #         return
+        # else:
+        #     fname = None
+        # rimseval.data_io.integrals.export(crd, fname=fname)
+        pass
 
     def backgrounds_draw(self):
         """Open GUI for user to draw backgrounds."""
@@ -2180,8 +2182,6 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self.integrals_copy_action,
             self.integrals_copy_w_names_action,
             self.integrals_copy_all_w_fnames_action,
-            self.integrals_export_action,
-            self.integrals_export_as_action,
             self.special_excel_workup_file_action,
         ]
         if crd.integrals is not None:
