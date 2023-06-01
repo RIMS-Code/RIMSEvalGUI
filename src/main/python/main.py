@@ -1,6 +1,7 @@
 """Main RIMSEval graphical user interface."""
 
 import itertools
+import json
 from pathlib import Path
 import sys
 from typing import Union
@@ -14,6 +15,7 @@ except ImportError:
     ApplicationContext = None
     fbsrt_platform = None
 
+import json
 import numpy as np
 from PyQt6 import QtCore, QtGui, QtWidgets
 from pyqtconfig import ConfigDialog, ConfigManager
@@ -1042,9 +1044,24 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             "Norm isos": {"prefer_hidden": True},
         }
 
-        self.config = ConfigManager(
-            default_values, filename=self.app_local_path.joinpath("config.json")
-        )
+        try:
+            self.config = ConfigManager(
+                default_values, filename=self.app_local_path.joinpath("config.json")
+            )
+        except json.decoder.JSONDecodeError as err:
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Configuration error",
+                f"Your configuration/settings file seems to be corrupt. "
+                f"Deleting it and starting with the default config. "
+                f"Plese check your settings for correctness."
+                f"\n\n{err.args[0]}",
+            )
+            self.app_local_path.joinpath("config.json").unlink()
+            self.config = ConfigManager(
+                default_values, filename=self.app_local_path.joinpath("config.json")
+            )
+
         self.config.set_many_metadata(default_settings_metadata)
         self.user_folder = Path(self.config.get("User folder"))
         ini.norm_isos = self.config.get("Norm isos")
@@ -1108,9 +1125,21 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
                 self.crd_files.open_files()  # open, but no read
                 self.crd_files.peak_fwhm = self.config.get("Peak FWHM (us)")
 
-                self.crd_files.load_calibrations(
-                    secondary_cal=self.app_local_path.joinpath("calibration.json")
-                )
+                try:
+                    self.crd_files.load_calibrations(
+                        secondary_cal=self.app_local_path.joinpath("calibration.json")
+                    )
+                except OSError as err:
+                    if "calibration.json" in err.args[0]:
+                        # just skip, empty default calibration file written later
+                        QtWidgets.QMessageBox.warning(
+                            self,
+                            "Calibration file error.",
+                            "There seems to be an error with the default calibration "
+                            "file. I will delete it and start with a new one.",
+                        )
+                    else:
+                        raise OSError(err.args[0]) from err
 
                 self.file_names_model.set_new_list(file_paths)
 
@@ -1489,21 +1518,22 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
         :param save_as: Save the integrals with a user-defined filename.
         """
-        crd = self.current_crd_file
-        if save_as:
-            query = QtWidgets.QFileDialog.getSaveFileName(
-                self,
-                caption="Save integrals as",
-                directory=str(self.user_folder),
-                filter="CSV Files (*.csv)",
-            )
-            if query[0]:
-                fname = Path(query[0]).with_suffix(".csv")
-            else:
-                return
-        else:
-            fname = None
-        rimseval.data_io.integrals.export(crd, fname=fname)
+        # crd = self.current_crd_file
+        # if save_as:
+        #     query = QtWidgets.QFileDialog.getSaveFileName(
+        #         self,
+        #         caption="Save integrals as",
+        #         directory=str(self.user_folder),
+        #         filter="CSV Files (*.csv)",
+        #     )
+        #     if query[0]:
+        #         fname = Path(query[0]).with_suffix(".csv")
+        #     else:
+        #         return
+        # else:
+        #     fname = None
+        # rimseval.data_io.integrals.export(crd, fname=fname)
+        pass
 
     def backgrounds_draw(self):
         """Open GUI for user to draw backgrounds."""
@@ -2164,8 +2194,6 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self.integrals_copy_action,
             self.integrals_copy_w_names_action,
             self.integrals_copy_all_w_fnames_action,
-            self.integrals_export_action,
-            self.integrals_export_as_action,
             self.special_excel_workup_file_action,
         ]
         if crd.integrals is not None:
