@@ -14,6 +14,7 @@ except ImportError:
     ApplicationContext = None
     fbsrt_platform = None
 
+import json
 import numpy as np
 from PyQt6 import QtCore, QtGui, QtWidgets
 from pyqtconfig import ConfigDialog, ConfigManager
@@ -1042,9 +1043,24 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             "Norm isos": {"prefer_hidden": True},
         }
 
-        self.config = ConfigManager(
-            default_values, filename=self.app_local_path.joinpath("config.json")
-        )
+        try:
+            self.config = ConfigManager(
+                default_values, filename=self.app_local_path.joinpath("config.json")
+            )
+        except json.decoder.JSONDecodeError as err:
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Configuration error",
+                f"Your configuration/settings file seems to be corrupt. "
+                f"Deleting it and starting with the default config. "
+                f"Plese check your settings for correctness."
+                f"\n\n{err.args[0]}",
+            )
+            self.app_local_path.joinpath("config.json").unlink()
+            self.config = ConfigManager(
+                default_values, filename=self.app_local_path.joinpath("config.json")
+            )
+
         self.config.set_many_metadata(default_settings_metadata)
         self.user_folder = Path(self.config.get("User folder"))
         ini.norm_isos = self.config.get("Norm isos")
