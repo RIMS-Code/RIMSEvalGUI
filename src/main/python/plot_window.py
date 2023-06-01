@@ -25,9 +25,9 @@ class PlotWindow(QtWidgets.QMainWindow):
         # self.setGeometry(QtCore.QRect(1000, 1000, 100, 100))
         self.move(1550, 200)
 
-        theme = parent.config.get("Theme")
+        self.theme = parent.config.get("Theme")
 
-        if theme is None or theme == "auto":
+        if self.theme is None or self.theme == "auto":
             if darkdetect.isDark():
                 self.theme = "dark"
             else:
