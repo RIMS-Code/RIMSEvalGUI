@@ -1,7 +1,7 @@
 PyQt6
 pyqtdarktheme
 darkdetect
-rimseval>=2.0.1
+rimseval>=2.0.2
 pyqtconfig>=0.9.2
 matplotlib
 numpy
