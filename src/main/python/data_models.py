@@ -1,11 +1,151 @@
 """Models for connecting opened data with views."""
 
 from pathlib import Path
-from typing import List
+from typing import Any, List
 
 from PyQt6 import QtCore, QtGui
 import numpy as np
 from rimseval.guis.integrals import tableau_color
+
+from items import TreeItem
+
+
+class EvaluatorFilesModel(QtCore.QAbstractItemModel):
+    def __init__(
+        self, experiment_name: str = "Experiment", data: dict = None, parent=None
+    ):
+        """Initialize the model.
+
+        :param experiment_name: Name of the experiment.
+        :param data: Data to be displayed in the tree.
+        :param parent: Parent widget.
+        """
+        super().__init__(parent)
+
+        data = {
+            "a": ["a1", "a2", "a3"],
+            "b": ["b1", "b2"],
+            "c": ["c1", "c2", "c3", "c4"],
+            "d": ["d1", "d2", "d3"],
+            "e": ["e1", "e2", "e3", "e4", "e5"],
+        }
+
+        self.root_item = TreeItem(experiment_name)
+        self.setup_model_data(data)
+
+    def columnCount(self, parent: QtCore.QModelIndex = None) -> int:
+        """Return the number of columns."""
+        return self.root_item.column_count()
+
+    def data(self, index: QtCore.QModelIndex, role: int = None):
+        """Return the data at a given index."""
+        if not index.isValid():
+            return None
+
+        if (
+            role != QtCore.Qt.ItemDataRole.DisplayRole
+            and role != QtCore.Qt.ItemDataRole.EditRole
+        ):
+            return None
+
+        item: TreeItem = self.get_item(index)
+
+        return item.data()
+
+    def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
+        """Return the flags for a given index."""
+        if not index.isValid():
+            return QtCore.Qt.ItemFlag.NoItemFlags
+
+        return QtCore.QAbstractItemModel.flags(self, index)
+
+    def get_item(self, index: QtCore.QModelIndex = QtCore.QModelIndex()) -> TreeItem:
+        if index.isValid():
+            item: TreeItem = index.internalPointer()
+            if item:
+                return item
+
+        return self.root_item
+
+    def headerData(
+        self,
+        section: int,
+        orientation: QtCore.Qt.Orientation,
+        role: int = QtCore.Qt.ItemDataRole.DisplayRole,
+    ):
+        if (
+            orientation == QtCore.Qt.Orientation.Horizontal
+            and role == QtCore.Qt.ItemDataRole.DisplayRole
+        ):
+            return self.root_item.data()
+
+        return None
+
+    def index(
+        self, row: int, column: int, parent: QtCore.QModelIndex = QtCore.QModelIndex()
+    ) -> QtCore.QModelIndex:
+        if parent.isValid() and parent.column() != 0:
+            return QtCore.QModelIndex()
+
+        parent_item: TreeItem = self.get_item(parent)
+        if not parent_item:
+            return QtCore.QModelIndex()
+
+        child_item: TreeItem = parent_item.child(row)
+        if child_item:
+            return self.createIndex(row, column, child_item)
+        return QtCore.QModelIndex()
+
+    def parent(
+        self, index: QtCore.QModelIndex = QtCore.QModelIndex()
+    ) -> QtCore.QModelIndex:
+        if not index.isValid():
+            return QtCore.QModelIndex()
+
+        child_item: TreeItem = self.get_item(index)
+        if child_item:
+            parent_item: TreeItem = child_item.parent()
+        else:
+            parent_item = None
+
+        if parent_item == self.root_item or not parent_item:
+            return QtCore.QModelIndex()
+
+        return self.createIndex(parent_item.child_number(), 0, parent_item)
+
+    def rowCount(self, parent: QtCore.QModelIndex = QtCore.QModelIndex()) -> int:
+        if parent.isValid() and parent.column() > 0:
+            return 0
+
+        parent_item: TreeItem = self.get_item(parent)
+        if not parent_item:
+            return 0
+        return parent_item.child_count()
+
+    def setup_model_data(self, data: dict):
+        """Set up the model data from the given dictionary.
+
+        :param data: Dictionary with the data to be displayed.
+        """
+        parent = self.root_item
+        for key, values in data.items():
+            parent.insert_children(parent.child_count(), 1)
+            child = parent.last_child()
+            child.set_data(key)
+
+            for jt, val in enumerate(values):
+                child.insert_children(child.child_count(), 1)
+                child.last_child().set_data(val)
+        return None
+
+    def _repr_recursion(self, item: TreeItem, indent: int = 0) -> str:
+        result = " " * indent + repr(item) + "\n"
+        for child in item.child_items:
+            result += self._repr_recursion(child, indent + 2)
+        return result
+
+    def __repr__(self) -> str:
+        return self._repr_recursion(self.root_item)
 
 
 class OpenFilesModel(QtCore.QAbstractListModel):

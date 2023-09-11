@@ -6,6 +6,23 @@ from typing import Any, List
 from PyQt6 import QtCore, QtGui, QtWidgets
 
 
+class EvaluatorTreeView(QtWidgets.QTreeView):
+    """Tree view for evaluator samples and standards."""
+
+    def __int__(self, parent):
+        """Initialize the widget.
+
+        :param parent: Parent widget.
+        """
+        super().__init__(parent)
+        self.setMinimumWidth(400)
+        self.setSelectionMode(
+            QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection
+        )
+
+        # self.setResizeMode(QtWidgets.QListView.ResizeMode.Adjust)
+
+
 class OpenFilesListView(QtWidgets.QListView):
     """List view for opened CRD files."""
 

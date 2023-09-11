@@ -27,12 +27,13 @@ from rimseval.utilities import ini
 
 import export
 from data_models import (
+    EvaluatorFilesModel,
     IntegralsModel,
     IntegralBackgroundDefinitionModel,
     OpenFilesModel,
     NormIsosModel,
 )
-from data_views import IntegralsDisplay, OpenFilesListView
+from data_views import EvaluatorTreeView, IntegralsDisplay, OpenFilesListView
 from dialogs import (
     AboutDialog,
     BackgroundEditDialog,
@@ -83,7 +84,14 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.file_names_view = OpenFilesListView(self)
         self.file_names_model = OpenFilesModel(
             tick=self.appctxt.get_resource("icons/tick.png")
-        )  # empty model
+        )
+        self.eval_samples_view = EvaluatorTreeView(self)
+        self.eval_standards_view = EvaluatorTreeView(self)
+        self.eval_results_view = IntegralsDisplay(self)
+        # empty models
+        self.eval_samples_model = EvaluatorFilesModel()
+        self.eval_standards_model = EvaluatorFilesModel()
+        self.eval_results_model = IntegralsModel()  # fixme: needs new model probably
         self.integrals_model = IntegralsModel()
         self.user_macro = None  # file path to user macro, if loaded
 
@@ -100,6 +108,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.settings_menu = menu_bar.addMenu("Settings")
 
         # actions
+        # File Actions
         self.open_additional_crd_action = None
         self.unload_crd_action = None
         self.plot_active_spectrum_action = None
@@ -108,10 +117,12 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.load_lioneval_cal_action = None
         self.save_cal_action = None
         self.save_cal_as_action = None
+        # Mass Cal
         self.mass_cal_def_action = None
         self.mass_cal_optimize_action = None
         self.mass_cal_apply_action = None
         self.mass_cal_show_action = None
+        # Integrals
         self.integrals_set_edit_action = None
         self.integrals_draw_action = None
         self.integrals_fitting_action = None
@@ -124,17 +135,29 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.integrals_export_as_action = None
         self.backgrounds_draw_action = None
         self.backgrounds_set_edit_action = None
+        # Calculate
         self.calculate_single_action = None
         self.calculate_batch_action = None
+        # Evaluator
+        self.eval_add_experiment_action = None
+        self.eval_remove_experiment_action = None
+        self.eval_set_standard_action = None
+        self.eval_edit_correlated_action = None
+        self.eval_plot_action = None
+        self.eval_export_action = None
+        self.eval_calculate_action = None
+        # Export
         self.export_mass_spectrum_action = None
         self.export_tof_spectrum_action = None
         self.export_all_mass_spectra_action = None
         self.export_all_tof_spectra_action = None
+        # Special
         self.special_excel_workup_file_action = None
         self.special_integrals_per_pkg_action = None
         self.special_hist_dt_ions_action = None
         self.special_hist_ions_shot_action = None
         self.special_clean_up_file_action = None
+        # Window
         self.window_elements_action = None
         self.window_info_action = None
         self.window_plot_action = None
@@ -191,6 +214,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         # initialize the UI
         self.init_menu_toolbar()
         self.init_processor_widget()
+        self.init_evaluator_widget()
         self.init_status_bar()
 
         self.setStyleSheet(qdarktheme.load_stylesheet(self.config.get("Theme")))
@@ -414,6 +438,54 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         layout.addWidget(integral_display)
 
         self.main_widget_processor.setLayout(layout)
+
+    def init_evaluator_widget(self):
+        """Initialize the evaluator widget."""
+        layout = QtWidgets.QHBoxLayout()
+
+        # EVALUATOR SAMPLES AND STANDARDS VIEW #
+        # samples view and model
+        samples_layout = QtWidgets.QVBoxLayout()
+        samples_layout.addWidget(QtWidgets.QLabel("Samples"))
+
+        self.eval_samples_view.setModel(self.eval_samples_model)
+
+        samples_layout.addWidget(self.eval_samples_view)
+        layout.addLayout(samples_layout)
+
+        # standards view and model
+        standards_layout = QtWidgets.QVBoxLayout()
+        standards_layout.addWidget(QtWidgets.QLabel("Standards"))
+
+        self.eval_standards_view.setModel(self.eval_standards_model)
+
+        standards_layout.addWidget(self.eval_standards_view)
+        layout.addLayout(standards_layout)
+
+        # RESULTS AND BUTTONS
+        results_layout = QtWidgets.QVBoxLayout()
+        results_layout.addWidget(QtWidgets.QLabel("Results"))
+
+        self.eval_results_view.setModel(self.eval_results_model)
+
+        results_layout.addWidget(self.eval_results_view)
+
+        # buttons
+        buttons_layout = QtWidgets.QHBoxLayout()
+
+        left_button_layout = QtWidgets.QVBoxLayout()
+        right_button_layout = QtWidgets.QVBoxLayout()
+
+        self.eval_add_experiment_action = QtWidgets.QPushButton("Add Experiment")
+
+        buttons_layout.addLayout(left_button_layout)
+        buttons_layout.addLayout(right_button_layout)
+
+        results_layout.addLayout(buttons_layout)
+
+        layout.addLayout(results_layout)
+
+        self.main_widget_evaluator.setLayout(layout)
 
     def init_menu_toolbar(self):
         """Initialize the basics of the menu and toolbar, set the given categories."""
