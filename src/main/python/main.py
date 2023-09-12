@@ -89,8 +89,8 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.eval_standards_view = EvaluatorTreeView(self)
         self.eval_results_view = IntegralsDisplay(self)
         # empty models
-        self.eval_samples_model = EvaluatorFilesModel()
-        self.eval_standards_model = EvaluatorFilesModel()
+        self.eval_samples_model = EvaluatorFilesModel(experiment_name="Samples")
+        self.eval_standards_model = EvaluatorFilesModel(experiment_name="Standards")
         self.eval_results_model = IntegralsModel()  # fixme: needs new model probably
         self.integrals_model = IntegralsModel()
         self.user_macro = None  # file path to user macro, if loaded
@@ -98,14 +98,15 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         # menu bar
         menu_bar = self.menuBar()
         self.file_menu = menu_bar.addMenu("&File")
+        self.lst_menu = menu_bar.addMenu("&LST Files")
         self.mass_cal_menu = menu_bar.addMenu("&Mass Cal")
         self.integrals_menu = menu_bar.addMenu("&Integrals")
-        self.calculate_menu = menu_bar.addMenu("Calculate")
-        self.lst_menu = menu_bar.addMenu("&LST Files")
-        self.export_menu = menu_bar.addMenu("&Export")
-        self.special_menu = menu_bar.addMenu("&Special")
-        self.view_menu = menu_bar.addMenu("&View")
-        self.settings_menu = menu_bar.addMenu("Settings")
+        self.calculate_menu = menu_bar.addMenu("&Calculate")
+        self.export_menu = menu_bar.addMenu("E&xport")
+        self.special_menu = menu_bar.addMenu("S&pecial")
+        self.evaluator_menu = menu_bar.addMenu("E&valuate")
+        self.view_menu = menu_bar.addMenu("Vie&w")
+        self.settings_menu = menu_bar.addMenu("Se&ttings")
 
         # actions
         # File Actions
@@ -117,6 +118,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.load_lioneval_cal_action = None
         self.save_cal_action = None
         self.save_cal_as_action = None
+        self.save_evaluator_action = None
         # Mass Cal
         self.mass_cal_def_action = None
         self.mass_cal_optimize_action = None
@@ -139,13 +141,10 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.calculate_single_action = None
         self.calculate_batch_action = None
         # Evaluator
-        self.eval_add_experiment_action = None
-        self.eval_remove_experiment_action = None
-        self.eval_set_standard_action = None
-        self.eval_edit_correlated_action = None
-        self.eval_plot_action = None
-        self.eval_export_action = None
         self.eval_calculate_action = None
+        self.eval_export_action = None
+        self.eval_plot_action = None
+        self.eval_edit_correlated_action = None
         # Export
         self.export_mass_spectrum_action = None
         self.export_tof_spectrum_action = None
@@ -445,45 +444,28 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
         # EVALUATOR SAMPLES AND STANDARDS VIEW #
         # samples view and model
-        samples_layout = QtWidgets.QVBoxLayout()
-        samples_layout.addWidget(QtWidgets.QLabel("Samples"))
-
         self.eval_samples_view.setModel(self.eval_samples_model)
-
-        samples_layout.addWidget(self.eval_samples_view)
-        layout.addLayout(samples_layout)
+        self.eval_samples_view.setContextMenuPolicy(
+            QtCore.Qt.ContextMenuPolicy.CustomContextMenu
+        )
+        self.eval_samples_view.customContextMenuRequested.connect(
+            lambda pos: self.show_eval_tree_view_cm(pos, view="samples")
+        )
+        layout.addWidget(self.eval_samples_view)
 
         # standards view and model
-        standards_layout = QtWidgets.QVBoxLayout()
-        standards_layout.addWidget(QtWidgets.QLabel("Standards"))
-
         self.eval_standards_view.setModel(self.eval_standards_model)
+        self.eval_standards_view.setContextMenuPolicy(
+            QtCore.Qt.ContextMenuPolicy.CustomContextMenu
+        )
+        self.eval_standards_view.customContextMenuRequested.connect(
+            lambda pos: self.show_eval_tree_view_cm(pos, view="standards")
+        )
+        layout.addWidget(self.eval_standards_view)
 
-        standards_layout.addWidget(self.eval_standards_view)
-        layout.addLayout(standards_layout)
-
-        # RESULTS AND BUTTONS
-        results_layout = QtWidgets.QVBoxLayout()
-        results_layout.addWidget(QtWidgets.QLabel("Results"))
-
+        # results
         self.eval_results_view.setModel(self.eval_results_model)
-
-        results_layout.addWidget(self.eval_results_view)
-
-        # buttons
-        buttons_layout = QtWidgets.QHBoxLayout()
-
-        left_button_layout = QtWidgets.QVBoxLayout()
-        right_button_layout = QtWidgets.QVBoxLayout()
-
-        self.eval_add_experiment_action = QtWidgets.QPushButton("Add Experiment")
-
-        buttons_layout.addLayout(left_button_layout)
-        buttons_layout.addLayout(right_button_layout)
-
-        results_layout.addLayout(buttons_layout)
-
-        layout.addLayout(results_layout)
+        layout.addWidget(self.eval_results_view)
 
         self.main_widget_evaluator.setLayout(layout)
 
@@ -602,6 +584,30 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.file_menu.addSeparator()
         self.file_menu.addAction(unload_macro_action)
 
+        open_evaluator_action = QtGui.QAction(
+            QtGui.QIcon(self.appctxt.get_resource("icons/receipt-import.png")),
+            "Open Evaluator",
+            self,
+        )
+        open_evaluator_action.setShortcut(QtGui.QKeySequence("Alt+o"))
+        open_evaluator_action.setStatusTip("Open a saved evaluator instance.")
+        open_evaluator_action.triggered.connect(self.open_evaluator)
+        self.file_menu.addSeparator()
+        self.file_menu.addAction(open_evaluator_action)
+        tool_bar.addAction(open_evaluator_action)
+
+        save_evaluator_action = QtGui.QAction(
+            QtGui.QIcon(self.appctxt.get_resource("icons/receipt-text.png")),
+            "Save Evaluator",
+            self,
+        )
+        save_evaluator_action.setShortcut(QtGui.QKeySequence("Alt+s"))
+        save_evaluator_action.setStatusTip("Save the current evaluator instance.")
+        save_evaluator_action.triggered.connect(self.save_evaluator)
+        self.file_menu.addAction(save_evaluator_action)
+        tool_bar.addAction(save_evaluator_action)
+        self.save_evaluator_action = save_evaluator_action
+
         file_exit_action = QtGui.QAction(
             QtGui.QIcon(self.appctxt.get_resource("icons/application-export.png")),
             "Exit",
@@ -612,6 +618,31 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         file_exit_action.triggered.connect(self.close)
         self.file_menu.addSeparator()
         self.file_menu.addAction(file_exit_action)
+
+        # LST FILE ACTIONS #
+
+        lst_convert_action = QtGui.QAction(
+            QtGui.QIcon(self.appctxt.get_resource("icons/blue-folder-import.png")),
+            "Convert LST to CRD",
+            self,
+        )
+        lst_convert_action.setStatusTip("Convert LST to CRD file(s)")
+        lst_convert_action.setShortcut(QtGui.QKeySequence("Ctrl+l"))
+        lst_convert_action.triggered.connect(self.convert_lst_to_crd)
+        self.lst_menu.addAction(lst_convert_action)
+        tool_bar.addSeparator()
+        tool_bar.addAction(lst_convert_action)
+
+        lst_convert_tagged_action = QtGui.QAction(
+            QtGui.QIcon(None),
+            "Convert Tagged LST to CRD",
+            self,
+        )
+        lst_convert_tagged_action.setStatusTip("Convert Tagged LST to CRD file(s)")
+        lst_convert_tagged_action.triggered.connect(
+            lambda: self.convert_lst_to_crd(True)
+        )
+        self.lst_menu.addAction(lst_convert_tagged_action)
 
         # MASS CAL ACTIONS #
 
@@ -844,31 +875,6 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         tool_bar.addAction(calculate_batch_action)
         self.calculate_batch_action = calculate_batch_action
 
-        # LST FILE ACTIONS #
-
-        lst_convert_action = QtGui.QAction(
-            QtGui.QIcon(self.appctxt.get_resource("icons/blue-folder-import.png")),
-            "Convert LST to CRD",
-            self,
-        )
-        lst_convert_action.setStatusTip("Convert LST to CRD file(s)")
-        lst_convert_action.setShortcut(QtGui.QKeySequence("Ctrl+l"))
-        lst_convert_action.triggered.connect(self.convert_lst_to_crd)
-        self.lst_menu.addAction(lst_convert_action)
-        tool_bar.addSeparator()
-        tool_bar.addAction(lst_convert_action)
-
-        lst_convert_tagged_action = QtGui.QAction(
-            QtGui.QIcon(None),
-            "Convert Tagged LST to CRD",
-            self,
-        )
-        lst_convert_tagged_action.setStatusTip("Convert Tagged LST to CRD file(s)")
-        lst_convert_tagged_action.triggered.connect(
-            lambda: self.convert_lst_to_crd(True)
-        )
-        self.lst_menu.addAction(lst_convert_tagged_action)
-
         # EXPORT ACTIONS #
         export_mass_spectrum_action = QtGui.QAction(
             QtGui.QIcon(),
@@ -982,6 +988,60 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.special_menu.addSeparator()
         self.special_menu.addAction(special_clean_up_file_action)
         self.special_clean_up_file_action = special_clean_up_file_action
+
+        # EVALUATE ACTIONS #
+
+        eval_calculate_action = QtGui.QAction(
+            QtGui.QIcon(self.appctxt.get_resource("icons/calculator.png")),
+            "Calculate evaluation",
+            self,
+        )
+        eval_calculate_action.setStatusTip(
+            "Calculate evaluation for all defined experiments."
+        )
+        eval_calculate_action.setShortcut(QtGui.QKeySequence("Alt+r"))
+        eval_calculate_action.triggered.connect(self.calculate_evaluator)
+        self.evaluator_menu.addAction(eval_calculate_action)
+        tool_bar.addSeparator()
+        tool_bar.addAction(eval_calculate_action)
+        self.eval_calculate_action = eval_calculate_action
+
+        eval_export_action = QtGui.QAction(
+            QtGui.QIcon(self.appctxt.get_resource("icons/receipt-export.png")),
+            "Export evaluation",
+            self,
+        )
+        eval_export_action.setStatusTip("Export evaluation to Excel file.")
+        eval_export_action.setShortcut(QtGui.QKeySequence("Alt+e"))
+        eval_export_action.triggered.connect(self.export_evaluator)
+        self.evaluator_menu.addAction(eval_export_action)
+        tool_bar.addAction(eval_export_action)
+        self.eval_export_action = eval_export_action
+
+        eval_plot_action = QtGui.QAction(
+            QtGui.QIcon(self.appctxt.get_resource("icons/ruler.png")),
+            "Plot evaluation",
+            self,
+        )
+        eval_plot_action.setStatusTip("Plot evaluation for a pair of ratios.")
+        eval_plot_action.setShortcut(QtGui.QKeySequence("Alt+p"))
+        eval_plot_action.triggered.connect(self.plot_evaluator)
+        self.evaluator_menu.addAction(eval_plot_action)
+        tool_bar.addAction(eval_plot_action)
+        self.eval_plot_action = eval_plot_action
+
+        eval_edit_correlated_action = QtGui.QAction(
+            QtGui.QIcon(None),
+            "Edit correlated ratios",
+            self,
+        )
+        eval_edit_correlated_action.setStatusTip(
+            "Set / Edit correlated ratios that should be calculated"
+        )
+        eval_edit_correlated_action.triggered.connect(self.edit_correlations)
+        self.evaluator_menu.addSeparator()
+        self.evaluator_menu.addAction(eval_edit_correlated_action)
+        self.eval_edit_correlated_action = eval_edit_correlated_action
 
         # VIEW ACIONS #
 
@@ -1298,12 +1358,41 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
         :param position: Position of menu, will be mapped to file names view.
         """
+        quick_add_to_samples_action = QtGui.QAction(
+            QtGui.QIcon(None),
+            "Quick add to samples in evaluator",
+            self,
+        )
+        quick_add_to_samples_action.setStatusTip(
+            "Save integrals for this file and add to samples."
+            "IMPORTANT: Existing integral file (if any) will be overwritten."
+        )
+        quick_add_to_samples_action.triggered.connect(
+            lambda: print("Implement me quick add samples")
+        )
+
+        quick_add_to_standards_action = QtGui.QAction(
+            QtGui.QIcon(None),
+            "Quick add to standards in evaluator",
+            self,
+        )
+        quick_add_to_standards_action.setStatusTip(
+            "Save integrals for this file and add to standards."
+            "IMPORTANT: Existing integral file (if any) will be overwritten."
+        )
+        quick_add_to_standards_action.triggered.connect(
+            lambda: print("Implement me quick add standards")
+        )
+
         menu = QtWidgets.QMenu(self)
         menu.addAction(self.open_additional_crd_action)
         menu.addAction(self.unload_crd_action)
         menu.addSeparator()
         menu.addAction(self.plot_active_spectrum_action)
         menu.addAction(self.plot_multi_spectra_action)
+        menu.addSeparator()
+        menu.addAction(quick_add_to_samples_action)
+        menu.addAction(quick_add_to_standards_action)
 
         menu.exec(self.file_names_view.mapToGlobal(position))
 
@@ -1379,6 +1468,14 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             crd,
             fname=self.app_local_path.joinpath("calibration.json"),
         )
+
+    def open_evaluator(self):
+        """Open a saved evaluator instance and load it."""
+        print("Implement me open evaluator")
+
+    def save_evaluator(self):
+        """Save the current evaluator instance."""
+        print("Implement me save evaluator")
 
     # MASS CALIBRATION FUNCTIONS #
     def apply_mass_calibration(self):
@@ -1907,6 +2004,73 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         )
         self.tmp_window.show()
 
+    # EVALUATOR FUNCTIONS
+
+    def show_eval_tree_view_cm(self, position, view=None) -> None:
+        """Show a context menu on right click for the tree view in evaluator.
+
+        # fixme hook up all the lambdas
+
+        :param position: Position of menu, will be mapped to samples view.
+        :param view: View that was clicked on, either "samples" or "standards".
+        """
+        tree_view = (
+            self.eval_standards_view if view == "standards" else self.eval_samples_view
+        )
+
+        add_exp_action = QtGui.QAction(
+            QtGui.QIcon(None), f"Add experiment to {view}", self
+        )
+        add_exp_action.setStatusTip(
+            f"Add a new experiment from an integrals file to the {view}"
+        )
+        add_exp_action.triggered.connect(lambda: print(f"Add experiment to {view}"))
+
+        add_sub_ex_action = QtGui.QAction(
+            QtGui.QIcon(None), f"Add sub-experiment", self
+        )
+        add_sub_ex_action.setStatusTip(
+            "Add a new experiment from an integrals file to the selected "
+            f" experiment in {view}"
+        )
+        add_sub_ex_action.triggered.connect(
+            lambda: print(f"Add sub-experiment in {view}")
+        )
+
+        remove_exp_action = QtGui.QAction(
+            QtGui.QIcon(None), f"Remove selected (sub-)experiment in {view}", self
+        )
+        remove_exp_action.setStatusTip(
+            f"Remove the selected (sub-) experiment from {view}"
+        )
+        remove_exp_action.triggered.connect(
+            lambda: print(f"Remove selected (sub-)experiment in {view}")
+        )
+
+        menu = QtWidgets.QMenu(self)
+        menu.addAction(add_exp_action)
+        menu.addAction(add_sub_ex_action)
+        menu.addSeparator()
+        menu.addAction(remove_exp_action)
+
+        menu.exec(tree_view.mapToGlobal(position))
+
+    def edit_correlations(self):
+        """Edit correlations for the evaluator."""
+        print("Edit correlations")
+
+    def plot_evaluator(self):
+        """Plot the evaluator results."""
+        print("Plot evaluator")
+
+    def export_evaluator(self):
+        """Export the evaluator results."""
+        print("Export evaluator")
+
+    def calculate_evaluator(self):
+        """Calculate the evaluator results."""
+        print("Calculate evaluator")
+
     # VIEW FUNCTIONS #
 
     def window_elements(self):
@@ -2188,6 +2352,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self.load_lioneval_cal_action,
             self.save_cal_action,
             self.save_cal_as_action,
+            self.save_evaluator_action,
             self.mass_cal_def_action,
             self.mass_cal_apply_action,
             self.mass_cal_optimize_action,
@@ -2215,6 +2380,10 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             self.special_hist_dt_ions_action,
             self.special_hist_ions_shot_action,
             self.special_clean_up_file_action,
+            self.eval_calculate_action,
+            self.eval_export_action,
+            self.eval_plot_action,
+            self.eval_edit_correlated_action,
         ]
         for action in all_actions:
             action.setDisabled(True)
@@ -2297,6 +2466,15 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         if crd.def_integrals is not None and crd.mass is not None:
             for action in backgrounds_actions:
                 action.setEnabled(True)
+
+        # todo: evaluator actions
+        evaluator_actions = [
+            self.save_evaluator_action,
+            self.eval_calculate_action,
+            self.eval_export_action,
+            self.eval_plot_action,
+            self.eval_edit_correlated_action,
+        ]
 
     def update_info_window(self, update_all: bool = False) -> None:
         """Update the Info window.

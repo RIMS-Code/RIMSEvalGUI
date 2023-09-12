@@ -11,9 +11,7 @@ from items import TreeItem
 
 
 class EvaluatorFilesModel(QtCore.QAbstractItemModel):
-    def __init__(
-        self, experiment_name: str = "Experiment", data: dict = None, parent=None
-    ):
+    def __init__(self, experiment_name: str = "Exp", data: dict = None, parent=None):
         """Initialize the model.
 
         :param experiment_name: Name of the experiment.
@@ -22,14 +20,17 @@ class EvaluatorFilesModel(QtCore.QAbstractItemModel):
         """
         super().__init__(parent)
 
-        data = {
-            "a": ["a1", "a2", "a3"],
-            "b": ["b1", "b2"],
-            "c": ["c1", "c2", "c3", "c4"],
-            "d": ["d1", "d2", "d3"],
-            "e": ["e1", "e2", "e3", "e4", "e5"],
-        }
+        # fixme: remove the next stuff, only temporary
+        if data is None:
+            data = {
+                "a": ["a1", "a2", "a3"],
+                "b": ["b1", "b2"],
+                "c": ["c1", "c2", "c3", "c4"],
+                "d": ["d1", "d2", "d3"],
+                "e": ["e1", "e2", "e3", "e4", "e5"],
+            }
 
+        self.experiment_name = experiment_name
         self.root_item = TreeItem(experiment_name)
         self.setup_model_data(data)
 
@@ -146,6 +147,16 @@ class EvaluatorFilesModel(QtCore.QAbstractItemModel):
 
     def __repr__(self) -> str:
         return self._repr_recursion(self.root_item)
+
+
+class EvaluatorResultsModel(QtCore.QAbstractTableModel):
+    """Table model for evaluator results section.
+
+    # TODO This will liekly be similar to `IntegralsModel` below.
+    """
+
+    def __init__(self):
+        super().__init__()
 
 
 class OpenFilesModel(QtCore.QAbstractListModel):
