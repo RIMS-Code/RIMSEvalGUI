@@ -1,6 +1,5 @@
 """Data views for opened CRD files."""
 
-
 from typing import Any, List
 
 from PyQt6 import QtCore, QtGui, QtWidgets
