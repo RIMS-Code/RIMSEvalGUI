@@ -97,7 +97,7 @@ class IntegralsModel(QtCore.QAbstractTableModel):
         """
         super().__init__()
         self._names = names
-        self._header = ["Peak", "Counts", "\u00B11\u03C3", "Delta", "\u00B11\u03C3"]
+        self._header = ["Peak", "Counts", "\u00b11\u03c3", "Delta", "\u00b11\u03c3"]
 
         if data is None:
             self._data = np.zeros((0, 0, 0, 0))
@@ -135,7 +135,7 @@ class IntegralsModel(QtCore.QAbstractTableModel):
             if orientation == QtCore.Qt.Orientation.Horizontal:  # column headers
                 return str(self._header[section])
             if orientation == QtCore.Qt.Orientation.Vertical:  # row headers
-                return "\u25CF"
+                return "\u25cf"
 
         if role == QtCore.Qt.ItemDataRole.ForegroundRole:
             if orientation == QtCore.Qt.Orientation.Vertical:
