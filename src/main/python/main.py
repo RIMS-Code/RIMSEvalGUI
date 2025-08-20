@@ -1,5 +1,6 @@
 """Main RIMSEval graphical user interface."""
 
+from importlib import metadata
 import itertools
 import json
 from pathlib import Path
@@ -72,7 +73,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.init_config_manager()
 
         # window titles and geometry
-        self.version = f"v{rimseval.__version__}"
+        self.version = f"v{metadata.version('rimseval')}"
         self.setWindowTitle(f"RIMS Evaluation {self.version}")
         self.setGeometry(QtCore.QRect(310, 100, 700, 100))
 
@@ -193,7 +194,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
         # welcome the user
         self.status_bar.showMessage(
-            f"Welcome to RIMSEval v{rimseval.__version__}", msecs=self.status_bar_time
+            f"Welcome to RIMSEval v{self.version}", msecs=self.status_bar_time
         )
 
         # update actions
@@ -769,6 +770,18 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
         self.calculate_batch_action = calculate_batch_action
 
         # LST FILE ACTIONS #
+
+        kore_convert_action = QtGui.QAction(
+            QtGui.QIcon(self.appctxt.get_resource("icons/blue-folder-import.png")),
+            "Convert KORE to CRD",
+            self,
+        )
+        kore_convert_action.setStatusTip("Convert KORE to CRD file(s)")
+        kore_convert_action.setShortcut(QtGui.QKeySequence("Ctrl+k"))
+        kore_convert_action.triggered.connect(self.convert_kore_to_crd)
+        self.lst_menu.addAction(kore_convert_action)
+        tool_bar.addSeparator()
+        tool_bar.addAction(kore_convert_action)
 
         lst_convert_action = QtGui.QAction(
             QtGui.QIcon(self.appctxt.get_resource("icons/blue-folder-import.png")),
@@ -1637,6 +1650,35 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
 
     # LST FILE FUNCTIONS #
 
+    def convert_kore_to_crd(self):
+        """Convert a KORE LST file to CRD File(s)."""
+        query = QtWidgets.QFileDialog.getOpenFileNames(
+            self,
+            "Open LST File(s)",
+            directory=str(self.user_folder),
+            filter="KORE LST Files (*.lst)",
+        )[0]
+
+        if len(query) > 0:
+            fnames = [Path(it) for it in query]
+            for it, fname in enumerate(fnames):
+                try:
+                    lst = rimseval.data_io.kore_to_crd.KORE2CRD(file_name=fname)
+
+                    self.status_bar.showMessage(
+                        f"{fname.name} converted, {it + 1}/{len(fnames)} done.",
+                        msecs=self.status_bar_time,
+                    )
+                    QtWidgets.QApplication.processEvents()
+
+                except OSError as err:
+                    QtWidgets.QMessageBox.warning(
+                        self, "KORE LST File error", err.args[0]
+                    )
+
+            # set user path to this folder
+            self.user_folder = fname.parent
+
     def convert_lst_to_crd(self, tagged=False):
         """Convert LST to CRD File(s).
 
@@ -1665,7 +1707,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
                     lst.write_crd()
 
                     self.status_bar.showMessage(
-                        f"{fname.name} converted, {it+1}/{len(fnames)} done.",
+                        f"{fname.name} converted, {it + 1}/{len(fnames)} done.",
                         msecs=self.status_bar_time,
                     )
                     QtWidgets.QApplication.processEvents()
