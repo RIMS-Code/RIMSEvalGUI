@@ -1664,6 +1664,7 @@ class MainRimsEvalGui(QtWidgets.QMainWindow):
             for it, fname in enumerate(fnames):
                 try:
                     lst = rimseval.data_io.kore_to_crd.KORE2CRD(file_name=fname)
+                    lst.write_crd()
 
                     self.status_bar.showMessage(
                         f"{fname.name} converted, {it + 1}/{len(fnames)} done.",
