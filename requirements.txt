@@ -1,7 +1,7 @@
 PyQt6
 pyqtdarktheme
-rimseval>=2.0.2
-git+https://github.com/trappitsch/pyqtconfig@DialogBox_fixes_for_PyQt6
+git+https://github.com/RIMS-Code/RIMSEval@kore_lst_support
+pyqtconfig
 matplotlib
 numpy
 requests
