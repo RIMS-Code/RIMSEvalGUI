@@ -1,6 +1,6 @@
 PyQt6
 pyqtdarktheme
-git+https://github.com/RIMS-Code/RIMSEval@kore_lst_support
+rimseval~=2.1
 pyqtconfig
 matplotlib
 numpy

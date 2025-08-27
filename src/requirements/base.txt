@@ -1,7 +1,7 @@
 PyQt6
 pyqtdarktheme
-rimseval==2.0.2
-git+https://github.com/trappitsch/pyqtconfig@DialogBox_fixes_for_PyQt6
+rimseval==2.1.0
+pyqtconfig
 matplotlib
 numpy
 requests

@@ -1,9 +1,9 @@
-# RIMSEvalGUI v2.0.14
+# RIMSEvalGUI v2.1.0
 
-RIMSEvalGUI release based on the latest `rimseval` version `v2.0.2`.
+RIMSEvalGUI release based on the latest `rimseval` version `v2.1.0`.
 
 **Main Changes to GUI:**
-- Peak overlaps now only trigger a question to the user to confirm the intention.
+- KORE LST files can now be converted to CRD files.
 
 
-Changes in `rimseval` package since last version: see [here](https://github.com/RIMS-Code/RIMSEval/releases/tag/v2.0.2).
+Changes in `rimseval` package since last version: see [here](https://github.com/RIMS-Code/RIMSEval/releases/tag/v2.1.0).
