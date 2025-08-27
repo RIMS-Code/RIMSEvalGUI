@@ -67,7 +67,7 @@ class AboutDialog(QtWidgets.QDialog):
         )
         layout.addWidget(issues)
 
-        author = QtWidgets.QLabel("Reto Trappitsch, 2022")
+        author = QtWidgets.QLabel("Reto Trappitsch")
         layout.addWidget(author)
 
         button_box = QtWidgets.QDialogButtonBox(
